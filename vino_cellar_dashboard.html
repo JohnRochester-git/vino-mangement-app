@@ -289,10 +289,16 @@
 <div class="topbar">
   <div class="brand">
     <div class="brand-mark">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="8" cy="8" r="4" fill="#C9A15B"/>
-        <circle cx="16" cy="8" r="4" fill="#7A1A2E"/>
-        <circle cx="12" cy="15" r="4" fill="#C9A15B"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 5V2l-5.89 5.89"/>
+        <circle cx="16.6" cy="15.89" r="3"/>
+        <circle cx="8.11" cy="7.4" r="3"/>
+        <circle cx="12.35" cy="11.65" r="3"/>
+        <circle cx="13.91" cy="5.85" r="3"/>
+        <circle cx="18.15" cy="10.09" r="3"/>
+        <circle cx="6.56" cy="13.2" r="3"/>
+        <circle cx="10.8" cy="17.44" r="3"/>
+        <circle cx="5" cy="19" r="3"/>
       </svg>
     </div>
     <div>
@@ -309,6 +315,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
       Add Wine
     </button>
+    <a href="login.html" class="btn-ghost" id="signOutBtn" title="Sign out / Switch account" style="text-decoration:none;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sign Out
+    </a>
   </div>
 </div>
 
@@ -490,6 +500,7 @@
 </div>
 
 <script>
+  // Filter chips click handling
   document.querySelectorAll('.chip-row .chip, .pair-row .chip').forEach(function(chip){
     chip.addEventListener('click', function(){
       var siblings = chip.parentElement.querySelectorAll('.chip');
@@ -497,6 +508,47 @@
       chip.classList.add(chip.parentElement.classList.contains('pair-row') ? 'gold-active' : (chip.textContent.trim()==='All' ? 'gold-active' : 'active'));
     });
   });
+
+  // Sync user profile from login session if available
+  (function initUserSession() {
+    try {
+      const savedUser = localStorage.getItem('vino_user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        const nameEl = document.querySelector('.user-name');
+        const emailEl = document.querySelector('.user-email');
+        const avatarEl = document.querySelector('.avatar');
+
+        if (user.username && nameEl) {
+          nameEl.textContent = user.username;
+          
+          // Generate initials
+          const parts = user.username.trim().split(/\s+/);
+          let initials = 'LR';
+          if (parts.length >= 2) {
+            initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+          } else if (parts.length === 1 && parts[0].length >= 1) {
+            initials = parts[0].substring(0, 2).toUpperCase();
+          }
+          if (avatarEl) avatarEl.textContent = initials;
+        }
+
+        if (user.email && emailEl) {
+          emailEl.textContent = user.email;
+        }
+      }
+    } catch(err) {
+      console.warn('Session load error:', err);
+    }
+
+    const signOutBtn = document.getElementById('signOutBtn');
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', function(e) {
+        // Optional clean up, then navigate
+        // localStorage.removeItem('vino_user');
+      });
+    }
+  })();
 </script>
 
 </body>
