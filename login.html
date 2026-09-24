@@ -363,43 +363,27 @@
     transform: none;
   }
 
-  /* Quick Demo Access */
-  .demo-access {
+  /* Auth mode toggle (sign in / create account) */
+  .auth-toggle {
     margin-top: 22px;
     padding-top: 18px;
     border-top: 1px solid var(--hairline);
     text-align: center;
-  }
-
-  .demo-text {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
-    margin-bottom: 10px;
   }
 
-  .btn-demo {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface-2);
-    border: 1px solid var(--hairline);
-    color: var(--text);
-    padding: 7px 14px;
-    border-radius: 16px;
-    font-size: 12.5px;
-    font-family: 'Inter', sans-serif;
+  .auth-toggle a {
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
   }
 
-  .btn-demo:hover {
-    border-color: var(--gold-dim);
-    color: var(--gold);
-    background: #34181c;
-  }
-
-  .btn-demo svg {
-    color: var(--gold);
+  .auth-toggle a:hover {
+    color: var(--gold-hover);
+    text-decoration: underline;
   }
 
   /* Alert / Message */
@@ -529,7 +513,7 @@
             type="text" 
             id="usernameInput" 
             class="form-input" 
-            placeholder="e.g. Luke R or lukeroch38@example.com" 
+            placeholder="Your username" 
             required 
             autofocus
           >
@@ -579,15 +563,8 @@
         </svg>
       </button>
 
-      <div class="demo-access">
-        <div class="demo-text">Quick access for testing:</div>
-        <button type="button" class="btn-demo" id="demoLukeBtn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          Auto-fill as Luke R (Cellar Master)
-        </button>
+      <div class="auth-toggle" id="authToggle">
+        Don't have an account? <a href="#" id="toggleAuthMode">Create one</a>
       </div>
     </form>
   </div>
@@ -598,7 +575,7 @@
 </div>
 
 <script>
-  // DOM Elements
+  // ---- DOM Elements ----
   const form = document.getElementById('loginForm');
   const usernameInput = document.getElementById('usernameInput');
   const passwordInput = document.getElementById('passwordInput');
@@ -610,10 +587,60 @@
   const arrowIcon = document.getElementById('arrowIcon');
   const alertBanner = document.getElementById('alertBanner');
   const alertText = document.getElementById('alertText');
-  const demoLukeBtn = document.getElementById('demoLukeBtn');
   const forgotLink = document.getElementById('forgotLink');
+  const toggleAuthMode = document.getElementById('toggleAuthMode');
+  const authToggle = document.getElementById('authToggle');
+  const cardHeaderLabel = document.querySelector('.card-header-label');
 
-  // Toggle Password Visibility
+  // ---- Auth Mode State ----
+  const ACCOUNTS_KEY = 'vino_accounts';   // Array of { username, email, passwordHash }
+  let isSignUpMode = false;
+
+  // ---- Simple password hashing (SHA-256 via SubtleCrypto) ----
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function getAccounts() {
+    try {
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveAccounts(accounts) {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+
+  // ---- Toggle between Sign In / Create Account ----
+  toggleAuthMode.addEventListener('click', function(e) {
+    e.preventDefault();
+    clearAlert();
+    isSignUpMode = !isSignUpMode;
+
+    if (isSignUpMode) {
+      cardHeaderLabel.textContent = 'Create your cellar account';
+      btnText.textContent = 'Create Account';
+      authToggle.innerHTML = 'Already have an account? <a href="#" id="toggleAuthMode">Sign in</a>';
+      usernameInput.placeholder = 'Choose a username';
+    } else {
+      cardHeaderLabel.textContent = 'Sign in to your cellar';
+      btnText.textContent = 'Sign In to Cellar';
+      authToggle.innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthMode">Create one</a>';
+      usernameInput.placeholder = 'Your username';
+    }
+
+    // Re-bind the new anchor
+    document.getElementById('toggleAuthMode').addEventListener('click', arguments.callee.bind(this));
+  });
+
+  // ---- Toggle Password Visibility ----
   let isPwdVisible = false;
   togglePwdBtn.addEventListener('click', function() {
     isPwdVisible = !isPwdVisible;
@@ -633,20 +660,13 @@
     }
   });
 
-  // Quick Demo Auto-fill
-  demoLukeBtn.addEventListener('click', function() {
-    usernameInput.value = 'Luke R';
-    passwordInput.value = 'reserve2010';
-    clearAlert();
-    usernameInput.focus();
-  });
-
-  // Forgot password handler
+  // ---- Forgot password handler ----
   forgotLink.addEventListener('click', function(e) {
     e.preventDefault();
-    showAlert('To reset your password, contact your cellar administrator or use the demo login credentials.', 'success');
+    showAlert('Password reset is not available. Please create a new account if you\'ve forgotten your credentials.', 'success');
   });
 
+  // ---- Alert helpers ----
   function showAlert(msg, type = 'error') {
     alertBanner.className = 'alert-banner ' + type;
     alertText.textContent = msg;
@@ -657,7 +677,7 @@
     alertBanner.style.display = 'none';
   }
 
-  // Pre-fill remembered username if available
+  // ---- Pre-fill remembered username ----
   const savedUser = localStorage.getItem('vino_user');
   if (savedUser) {
     try {
@@ -668,8 +688,16 @@
     } catch(e) {}
   }
 
-  // Handle Form Submission
-  form.addEventListener('submit', function(e) {
+  // ---- Reset button state helper ----
+  function resetButton() {
+    submitBtn.disabled = false;
+    btnSpinner.style.display = 'none';
+    arrowIcon.style.display = '';
+    btnText.textContent = isSignUpMode ? 'Create Account' : 'Sign In to Cellar';
+  }
+
+  // ---- Handle Form Submission ----
+  form.addEventListener('submit', async function(e) {
     e.preventDefault();
     clearAlert();
 
@@ -677,54 +705,99 @@
     const password = passwordInput.value;
 
     if (!username) {
-      showAlert('Please enter your username or email address.');
+      showAlert('Please enter your username.');
       usernameInput.focus();
       return;
     }
 
     if (!password) {
-      showAlert('Please enter your cellar password.');
+      showAlert('Please enter your password.');
       passwordInput.focus();
       return;
     }
 
-    // UX: Show loading state
+    if (password.length < 4) {
+      showAlert('Password must be at least 4 characters.');
+      passwordInput.focus();
+      return;
+    }
+
+    // Show loading state
     submitBtn.disabled = true;
     btnSpinner.style.display = 'inline-block';
     arrowIcon.style.display = 'none';
-    btnText.textContent = 'Authenticating...';
+    btnText.textContent = isSignUpMode ? 'Creating account...' : 'Authenticating...';
 
-    // Simulated luxury authentication sequence
+    const passwordHash = await hashPassword(password);
+    const accounts = getAccounts();
+
+    // Brief delay for UX polish
     setTimeout(function() {
-      // Determine display name and email
-      let displayName = username;
-      let email = username.includes('@') ? username : (username.toLowerCase().replace(/[^a-z0-9]/g, '') + '@vino-cellar.com');
-      
-      if (username.toLowerCase().includes('luke')) {
-        displayName = 'Luke R';
-        email = 'lukeroch38@example.com';
-      }
+      if (isSignUpMode) {
+        // ---- REGISTRATION ----
+        const exists = accounts.find(a => a.username.toLowerCase() === username.toLowerCase());
+        if (exists) {
+          showAlert('An account with that username already exists. Please sign in instead.');
+          resetButton();
+          return;
+        }
 
-      // Store authenticated session
-      const session = {
-        username: displayName,
-        email: email,
-        loginTime: new Date().toISOString()
-      };
+        // Build email from username
+        const email = username.toLowerCase().replace(/[^a-z0-9]/g, '') + '@vino-cellar.com';
 
-      try {
+        accounts.push({
+          username: username,
+          email: email,
+          passwordHash: passwordHash
+        });
+        saveAccounts(accounts);
+
+        // Create session and redirect
+        const session = {
+          username: username,
+          email: email,
+          loginTime: new Date().toISOString()
+        };
         localStorage.setItem('vino_user', JSON.stringify(session));
-      } catch(err) {
-        console.warn('LocalStorage error:', err);
+
+        showAlert('Account created! Welcome, ' + username + '. Opening your cellar...', 'success');
+        btnText.textContent = 'Redirecting...';
+
+        setTimeout(function() {
+          window.location.href = 'vino_cellar_dashboard.html';
+        }, 700);
+
+      } else {
+        // ---- LOGIN ----
+        const account = accounts.find(a => a.username.toLowerCase() === username.toLowerCase());
+
+        if (!account) {
+          showAlert('No account found with that username. Please create an account first.');
+          resetButton();
+          return;
+        }
+
+        if (account.passwordHash !== passwordHash) {
+          showAlert('Incorrect password. Please try again.');
+          resetButton();
+          return;
+        }
+
+        // Successful login — create session
+        const session = {
+          username: account.username,
+          email: account.email,
+          loginTime: new Date().toISOString()
+        };
+        localStorage.setItem('vino_user', JSON.stringify(session));
+
+        showAlert('Welcome back, ' + account.username + '. Opening your cellar...', 'success');
+        btnText.textContent = 'Redirecting...';
+
+        setTimeout(function() {
+          window.location.href = 'vino_cellar_dashboard.html';
+        }, 700);
       }
-
-      showAlert('Welcome back, ' + displayName + '. Opening your cellar...', 'success');
-      btnText.textContent = 'Redirecting...';
-
-      setTimeout(function() {
-        window.location.href = 'vino_cellar_dashboard.html';
-      }, 700);
-
     }, 600);
   });
 </script>
