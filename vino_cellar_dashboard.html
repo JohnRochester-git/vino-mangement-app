@@ -11,15 +11,21 @@
     --bg: #150A0C;
     --surface: #221013;
     --surface-2: #2B1417;
+    --surface-elevated: #32161B;
     --card-img-start: #3A1418;
     --card-img-end: #170A0B;
     --wine: #7A1A2E;
     --wine-deep: #4A0E1C;
+    --wine-glow: rgba(122, 26, 46, 0.4);
     --gold: #C9A15B;
+    --gold-hover: #D8B473;
     --gold-dim: #8C7440;
+    --gold-glow: rgba(201, 161, 91, 0.25);
     --text: #F2E9E4;
     --text-muted: #A88E88;
     --hairline: #3A2226;
+    --hairline-gold: rgba(201, 161, 91, 0.25);
+    --danger: #D64545;
   }
 
   * { box-sizing: border-box; }
@@ -30,9 +36,29 @@
     color: var(--text);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
   }
 
-  h1,h2,h3,.wordmark { font-family: 'Fraunces', serif; }
+  h1,h2,h3,h4,.wordmark { font-family: 'Fraunces', serif; }
+
+  /* Background ambiance glow */
+  .bg-glow-cellar {
+    position: fixed;
+    top: -160px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 480px;
+    background: radial-gradient(circle, var(--wine-glow) 0%, rgba(21, 10, 12, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .main-wrapper {
+    position: relative;
+    z-index: 1;
+  }
 
   /* ---------- TOP BAR ---------- */
   .topbar{
@@ -41,19 +67,28 @@
     justify-content: space-between;
     padding: 16px 40px;
     border-bottom: 1px solid var(--hairline);
+    background: rgba(21, 10, 12, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
 
   .brand{
     display:flex;
     align-items:center;
     gap: 12px;
+    text-decoration: none;
+    color: inherit;
   }
 
   .brand-mark{
     width: 42px; height: 42px;
     border-radius: 10px;
     background: linear-gradient(160deg, var(--wine) 0%, var(--wine-deep) 100%);
+    border: 1px solid rgba(201, 161, 91, 0.2);
     display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
   }
 
   .brand-name{ font-size: 20px; font-weight: 600; line-height:1; }
@@ -62,7 +97,7 @@
   .topbar-actions{ display:flex; align-items:center; gap: 12px; }
 
   .btn-ghost{
-    display:flex; align-items:center; gap:8px;
+    display:inline-flex; align-items:center; gap:8px;
     background: transparent;
     border: 1px solid var(--hairline);
     color: var(--text);
@@ -71,12 +106,19 @@
     font-size: 13.5px;
     font-family:'Inter',sans-serif;
     cursor:pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  .btn-ghost:hover{
+    border-color: var(--gold-dim);
+    background: rgba(201, 161, 91, 0.08);
+    color: #fff;
   }
 
   .btn-gold{
-    display:flex; align-items:center; gap:8px;
+    display:inline-flex; align-items:center; gap:8px;
     background: var(--gold);
-    border: none;
+    border: 1px solid transparent;
     color: #241318;
     padding: 9px 18px;
     border-radius: 20px;
@@ -84,9 +126,17 @@
     font-weight: 600;
     font-family:'Inter',sans-serif;
     cursor:pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(201, 161, 91, 0.2);
   }
-
-  .btn-gold:hover{ background:#D8B473; }
+  .btn-gold:hover{
+    background: var(--gold-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(201, 161, 91, 0.3);
+  }
+  .btn-gold:active{
+    transform: translateY(0);
+  }
 
   /* ---------- HERO ---------- */
   .hero{
@@ -98,7 +148,7 @@
     gap: 20px;
   }
 
-  .hero h1{ font-size: 34px; font-weight: 500; margin: 0 0 6px; }
+  .hero h1{ font-size: 34px; font-weight: 500; margin: 0 0 6px; letter-spacing: -0.5px; }
   .hero .sub{ color: var(--text-muted); font-size: 14.5px; }
 
   .hero-right{ display:flex; align-items:center; gap: 14px; }
@@ -115,6 +165,7 @@
     width: 38px; height: 38px;
     border-radius: 50%;
     background: var(--wine-deep);
+    border: 1px solid var(--hairline-gold);
     display:flex; align-items:center; justify-content:center;
     font-size: 13px; font-weight: 600; color: var(--gold);
   }
@@ -138,18 +189,24 @@
     display:flex;
     align-items:center;
     gap: 14px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .stat-card:hover{
+    border-color: rgba(201, 161, 91, 0.3);
+    transform: translateY(-2px);
   }
 
   .stat-icon{
-    width: 42px; height:42px;
+    width: 44px; height: 44px;
     border-radius: 8px;
     background: var(--surface-2);
+    border: 1px solid var(--hairline-gold);
     color: var(--gold);
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0;
   }
 
-  .stat-label{ font-size: 11px; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom:5px; }
+  .stat-label{ font-size: 11px; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom:5px; font-weight: 500; }
   .stat-value{ font-size: 22px; font-weight: 500; font-family:'Fraunces',serif; }
 
   /* ---------- FILTERS ---------- */
@@ -165,7 +222,7 @@
 
   .search-box{
     flex: 1;
-    min-width: 240px;
+    min-width: 260px;
     display:flex;
     align-items:center;
     gap: 10px;
@@ -173,6 +230,11 @@
     border: 1px solid var(--hairline);
     border-radius: 22px;
     padding: 10px 18px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .search-box:focus-within {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201, 161, 91, 0.15);
   }
 
   .search-box input{
@@ -198,6 +260,11 @@
     cursor: pointer;
     font-family:'Inter',sans-serif;
     white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .chip:hover{
+    border-color: var(--gold-dim);
+    color: var(--text);
   }
 
   .chip.active{
@@ -216,7 +283,7 @@
   .pair-row{
     display:flex;
     align-items:center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
     margin-top: 4px;
   }
@@ -225,330 +292,1615 @@
     font-size: 11.5px;
     letter-spacing: 0.6px;
     color: var(--text-muted);
-    margin-right: 2px;
+    margin-right: 4px;
+    font-weight: 600;
   }
+
+  /* Grid info header */
+  .grid-header {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 40px 14px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .grid-count strong { color: var(--text); }
 
   /* ---------- BOTTLE GRID ---------- */
   .bottle-grid{
     display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
     gap: 22px;
-    padding: 10px 40px 48px;
+    padding: 0 40px 48px;
   }
 
   .bottle-card{
     background: var(--surface);
     border: 1px solid var(--hairline);
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, box-shadow 0.22s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .bottle-card:hover{
+    transform: translateY(-5px);
+    border-color: rgba(201, 161, 91, 0.45);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
   }
 
   .bottle-image{
     position: relative;
-    height: 150px;
+    height: 155px;
     background: linear-gradient(160deg, var(--card-img-start) 0%, var(--card-img-end) 100%);
     display:flex;
-    align-items:flex-end;
-    justify-content:flex-end;
+    align-items:center;
+    justify-content:center;
     padding: 14px;
+    overflow: hidden;
   }
 
   .bottle-tag{
     position:absolute;
     top: 14px; left: 14px;
-    font-size: 11.5px;
-    padding: 4px 12px;
-    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 10px;
     background: var(--wine);
     color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+    z-index: 2;
   }
 
-  .bottle-tag.dessert{ background: #6B4A18; color: var(--gold); }
+  .bottle-tag.red { background: #7A1A2E; color: #FBE6ED; }
+  .bottle-tag.white { background: #484323; color: #FAF3DD; }
+  .bottle-tag.rose { background: #85324E; color: #FDE8EF; }
+  .bottle-tag.sparkling { background: #6F5B20; color: #FEF6D8; }
+  .bottle-tag.dessert { background: #6B4A18; color: var(--gold); }
+  .bottle-tag.fortified { background: #552719; color: #FBE3D8; }
 
-  .bottle-body{ padding: 16px 18px 18px; }
+  .bottle-qty-badge {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(34, 16, 19, 0.85);
+    border: 1px solid var(--hairline-gold);
+    color: var(--gold);
+    backdrop-filter: blur(6px);
+    z-index: 2;
+  }
 
-  .bottle-body h3{ font-size: 17px; font-weight: 500; margin: 0 0 4px; }
+  .bottle-bg-art {
+    opacity: 0.25;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .bottle-card:hover .bottle-bg-art {
+    opacity: 0.4;
+    transform: scale(1.08);
+  }
+
+  .bottle-body{
+    padding: 18px 20px 20px;
+    display:flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .bottle-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .bottle-body h3{
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.25;
+    color: #fff;
+  }
 
   .bottle-region{
-    display:flex; align-items:center; gap: 6px;
-    font-size: 12.5px; color: var(--text-muted);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .bottle-varietal {
+    font-size: 12px;
+    color: var(--gold-dim);
+    margin-bottom: 12px;
+  }
+
+  .bottle-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--hairline);
+    padding-top: 12px;
+    margin-top: auto;
+    font-size: 13px;
+  }
+
+  .bottle-worth {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .bottle-age {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .bottle-pair-preview {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .pair-pill-mini {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    color: var(--text-muted);
+  }
+
+  .bottle-click-hint {
+    margin-top: 12px;
+    font-size: 11.5px;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.2s ease;
+  }
+  .bottle-card:hover .bottle-click-hint {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Empty State */
+  .empty-state {
+    grid-column: 1 / -1;
+    padding: 60px 20px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px dashed var(--hairline);
+    border-radius: 14px;
+    color: var(--text-muted);
+  }
+  .empty-state h3 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { margin-bottom: 20px; font-size: 14px; }
+
+  /* ---------- MODALS (OVERVIEW & ADD WINE) ---------- */
+  .modal-backdrop{
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(12, 5, 7, 0.82);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.24s ease, visibility 0.24s ease;
+  }
+  .modal-backdrop.open{
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .modal-dialog{
+    background: linear-gradient(175deg, #2A1317 0%, #1A0A0D 100%);
+    border: 1px solid rgba(201, 161, 91, 0.3);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 30px rgba(201, 161, 91, 0.1);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+  .modal-backdrop.open .modal-dialog{
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--hairline);
+    position: sticky;
+    top: 0;
+    background: rgba(38, 17, 21, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 5;
+  }
+
+  .modal-header-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .age-badge {
+    font-size: 11.5px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(201, 161, 91, 0.15);
+    border: 1px solid var(--hairline-gold);
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .maturity-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+  }
+
+  .modal-close-btn{
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .modal-close-btn:hover{
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+
+  .modal-body{
+    padding: 24px 28px;
+  }
+
+  /* Wine Overview Inside */
+  .overview-hero-section {
+    margin-bottom: 24px;
+  }
+  .overview-wine-title {
+    font-size: 28px;
+    font-weight: 500;
+    margin: 0 0 8px;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .overview-wine-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+  .overview-varietal-pill {
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    padding: 3px 10px;
+    border-radius: 8px;
+    color: var(--gold);
+    font-size: 12px;
+  }
+
+  /* 4-Stat Overview Panel */
+  .overview-metrics-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .metric-box{
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .metric-label{
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .metric-value{
+    font-size: 20px;
+    font-family: 'Fraunces', serif;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .metric-value.gold-text { color: var(--gold); }
+  .metric-sub{
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Interactive quantity counter inside metric box */
+  .qty-counter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0;
+  }
+  .qty-stepper-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--hairline-gold);
+    background: var(--surface-2);
+    color: var(--gold);
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .qty-stepper-btn:hover {
+    background: var(--wine);
+    color: #fff;
+    border-color: var(--wine);
+  }
+
+  /* Overview Sections */
+  .overview-section{
+    margin-bottom: 22px;
+  }
+  .section-label{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .pair-chips-list{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .pair-badge{
+    background: rgba(201, 161, 91, 0.12);
+    border: 1px solid var(--hairline-gold);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+
+  .pair-description{
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    background: var(--surface);
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--hairline);
+  }
+
+  .sommelier-quote{
+    background: rgba(122, 26, 46, 0.15);
+    border-left: 3px solid var(--wine);
+    padding: 14px 16px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: #E2D3D0;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  .modal-footer{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px 22px;
+    border-top: 1px solid var(--hairline);
+    background: rgba(27, 12, 15, 0.95);
+    gap: 12px;
+  }
+  .modal-footer-right {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-danger-ghost {
+    background: transparent;
+    border: 1px solid rgba(214, 69, 69, 0.4);
+    color: #E88383;
+    padding: 9px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .btn-danger-ghost:hover {
+    background: rgba(214, 69, 69, 0.15);
+    border-color: var(--danger);
+    color: #fff;
+  }
+
+  /* Form Styles for Add Wine */
+  .modal-title{ font-size: 22px; font-weight: 500; margin: 0 0 4px; color: #fff; }
+  .modal-subtitle{ font-size: 13px; color: var(--text-muted); }
+
+  .form-group{
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label{
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+  .form-group label span.req{
+    color: var(--gold);
+  }
+
+  .form-row{
+    display: flex;
+    gap: 14px;
+    margin-bottom: 0;
+  }
+  .form-row .form-group{ flex: 1; }
+  .form-row .form-group.flex-2{ flex: 2; }
+
+  .form-input, .form-select, .form-textarea{
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus{
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201, 161, 91, 0.15);
+  }
+  .form-select{
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23C9A15B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+  .form-textarea{
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Selectable Chips inside Add Wine Modal */
+  .interactive-chips{
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .select-chip{
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+  }
+  .select-chip:hover{
+    border-color: var(--gold-dim);
+    color: var(--text);
+  }
+  .select-chip.selected{
+    background: var(--wine);
+    border-color: var(--gold-dim);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(122, 26, 46, 0.4);
+  }
+
+  /* Toast Notification */
+  .toast-container{
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .toast{
+    background: var(--surface-2);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast.show{
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .toast-icon{
+    color: var(--gold);
+    font-size: 16px;
   }
 
   @media (max-width: 900px){
     .stats-row{ grid-template-columns: repeat(2, 1fr); }
     .hero{ flex-direction: column; align-items: flex-start; }
+    .overview-metrics-grid{ grid-template-columns: 1fr; }
   }
   @media (max-width: 560px){
     .stats-row{ grid-template-columns: 1fr; }
-    .topbar, .hero, .filter-section, .bottle-grid{ padding-left: 20px; padding-right: 20px; }
+    .topbar, .hero, .filter-section, .bottle-grid, .grid-header{ padding-left: 20px; padding-right: 20px; }
+    .form-row{ flex-direction: column; gap: 0; }
+    .modal-footer{ flex-direction: column; align-items: stretch; }
+    .modal-footer-right{ flex-direction: column; }
   }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand">
-    <div class="brand-mark">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 5V2l-5.89 5.89"/>
-        <circle cx="16.6" cy="15.89" r="3"/>
-        <circle cx="8.11" cy="7.4" r="3"/>
-        <circle cx="12.35" cy="11.65" r="3"/>
-        <circle cx="13.91" cy="5.85" r="3"/>
-        <circle cx="18.15" cy="10.09" r="3"/>
-        <circle cx="6.56" cy="13.2" r="3"/>
-        <circle cx="10.8" cy="17.44" r="3"/>
-        <circle cx="5" cy="19" r="3"/>
-      </svg>
-    </div>
-    <div>
-      <div class="brand-name">Vino</div>
-      <div class="brand-sub">CELLAR</div>
-    </div>
-  </div>
-  <div class="topbar-actions">
-    <button class="btn-ghost">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      My Cellar
-    </button>
-    <button class="btn-gold">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-      Add Wine
-    </button>
-    <a href="login.html" class="btn-ghost" id="signOutBtn" title="Sign out / Switch account" style="text-decoration:none;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-      Sign Out
-    </a>
-  </div>
-</div>
+<div class="bg-glow-cellar"></div>
 
-<div class="hero">
-  <div>
-    <h1>My Cellar</h1>
-    <div class="sub">Every bottle, tracked and aging gracefully.</div>
-  </div>
-  <div class="hero-right">
-    <div class="user-card">
-      <div class="avatar">LR</div>
+<div class="main-wrapper">
+  <!-- ---------- TOP BAR ---------- -->
+  <div class="topbar">
+    <a href="#" class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 5V2l-5.89 5.89"/>
+          <circle cx="16.6" cy="15.89" r="3"/>
+          <circle cx="8.11" cy="7.4" r="3"/>
+          <circle cx="12.35" cy="11.65" r="3"/>
+          <circle cx="13.91" cy="5.85" r="3"/>
+          <circle cx="18.15" cy="10.09" r="3"/>
+          <circle cx="6.56" cy="13.2" r="3"/>
+          <circle cx="10.8" cy="17.44" r="3"/>
+          <circle cx="5" cy="19" r="3"/>
+        </svg>
+      </div>
       <div>
-        <div class="user-name">Luke R</div>
-        <div class="user-email">lukeroch38@example.com</div>
+        <div class="brand-name">Vino</div>
+        <div class="brand-sub">CELLAR</div>
+      </div>
+    </a>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="topMyCellarBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        My Cellar
+      </button>
+      <button class="btn-gold" id="openAddWineBtnTop">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Add Wine
+      </button>
+      <a href="login.html" class="btn-ghost" id="signOutBtn" title="Sign out / Switch account">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Sign Out
+      </a>
+    </div>
+  </div>
+
+  <!-- ---------- HERO ---------- -->
+  <div class="hero">
+    <div>
+      <h1>My Cellar</h1>
+      <div class="sub">Every bottle, tracked and aging gracefully. Click any wine to view its complete sommelier overview.</div>
+    </div>
+    <div class="hero-right">
+      <div class="user-card">
+        <div class="avatar">LR</div>
+        <div>
+          <div class="user-name">Luke R</div>
+          <div class="user-email">lukeroch38@example.com</div>
+        </div>
+      </div>
+      <button class="btn-gold" id="openAddWineBtnHero">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Add Wine
+      </button>
+    </div>
+  </div>
+
+  <!-- ---------- STATS ROW ---------- -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 3h10l-1 8a4 4 0 01-8 0z"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">DISTINCT WINES</div>
+        <div class="stat-value" id="statDistinct">7</div>
       </div>
     </div>
-    <button class="btn-gold">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-      Add Wine
-    </button>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 8h6M9 12h6"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">TOTAL BOTTLES</div>
+        <div class="stat-value" id="statBottles">16</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2.5 0 015 0c0 2-5 2-5 4a2.5 2.5 0 005 0"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">COLLECTION VALUE</div>
+        <div class="stat-value" id="statValue">$3,867</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10M16 2c0 5-8 5-8 10s8 5 8 10"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">OLDEST VINTAGE</div>
+        <div class="stat-value" id="statOldest">2010</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- FILTERS ---------- -->
+  <div class="filter-section">
+    <div class="search-row">
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" id="searchInput" placeholder="Search by wine name, varietal, or region...">
+      </div>
+      <div class="chip-row" id="typeChipRow">
+        <button class="chip gold-active" data-type="All">All</button>
+        <button class="chip" data-type="Red">Red</button>
+        <button class="chip" data-type="White">White</button>
+        <button class="chip" data-type="Rosé">Rosé</button>
+        <button class="chip" data-type="Sparkling">Sparkling</button>
+        <button class="chip" data-type="Dessert">Dessert</button>
+        <button class="chip" data-type="Fortified">Fortified</button>
+      </div>
+      <button class="btn-ghost" id="resetDemoBtn" title="Reset to default luxury cellar demo collection">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset Demo
+      </button>
+    </div>
+    <div class="pair-row" id="pairChipRow">
+      <span class="pair-label">PAIR WITH:</span>
+      <button class="chip gold-active" data-pair="All">All</button>
+      <button class="chip" data-pair="Beef">Beef</button>
+      <button class="chip" data-pair="Charcuterie">Charcuterie</button>
+      <button class="chip" data-pair="Cheese">Cheese</button>
+      <button class="chip" data-pair="Chocolate">Chocolate</button>
+      <button class="chip" data-pair="Dessert">Dessert</button>
+      <button class="chip" data-pair="Lamb">Lamb</button>
+      <button class="chip" data-pair="Pasta">Pasta</button>
+      <button class="chip" data-pair="Poultry">Poultry</button>
+      <button class="chip" data-pair="Salad">Salad</button>
+      <button class="chip" data-pair="Seafood">Seafood</button>
+      <button class="chip" data-pair="Spicy">Spicy</button>
+    </div>
+  </div>
+
+  <div class="grid-header">
+    <div class="grid-count" id="gridCountDisplay">Showing <strong>7</strong> wines</div>
+    <div style="font-size: 12px; color: var(--gold-dim);">Tip: Click any bottle to view food pairings & sommelier details</div>
+  </div>
+
+  <!-- ---------- BOTTLE GRID ---------- -->
+  <div class="bottle-grid" id="bottleGrid">
+    <!-- Wine cards injected dynamically -->
   </div>
 </div>
 
-<div class="stats-row">
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 3h10l-1 8a4 4 0 01-8 0z"/></svg>
+<!-- ============================================== -->
+<!-- WINE OVERVIEW MODAL                            -->
+<!-- ============================================== -->
+<div class="modal-backdrop" id="overviewModal" aria-hidden="true">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalWineTitle">
+    <div class="modal-header">
+      <div class="modal-header-tags">
+        <span class="bottle-tag red" id="modalWineTypeTag">Red</span>
+        <span class="age-badge" id="modalAgeBadge">16 Years Old</span>
+        <span class="maturity-badge" id="modalMaturityBadge">Peak Maturity</span>
+      </div>
+      <button class="modal-close-btn" id="closeOverviewBtn" aria-label="Close overview">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
     </div>
-    <div>
-      <div class="stat-label">DISTINCT WINES</div>
-      <div class="stat-value">7</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 8h6M9 12h6"/></svg>
-    </div>
-    <div>
-      <div class="stat-label">TOTAL BOTTLES</div>
-      <div class="stat-value">16</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2.5 0 015 0c0 2-5 2-5 4a2.5 2.5 0 005 0"/></svg>
-    </div>
-    <div>
-      <div class="stat-label">COLLECTION VALUE</div>
-      <div class="stat-value">$3,867</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10M16 2c0 5-8 5-8 10s8 5 8 10"/></svg>
-    </div>
-    <div>
-      <div class="stat-label">OLDEST VINTAGE</div>
-      <div class="stat-value">2010</div>
-    </div>
-  </div>
-</div>
 
-<div class="filter-section">
-  <div class="search-row">
-    <div class="search-box">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-      <input type="text" placeholder="Search by name or region...">
-    </div>
-    <div class="chip-row">
-      <button class="chip gold-active">All</button>
-      <button class="chip">Red</button>
-      <button class="chip">White</button>
-      <button class="chip">Rosé</button>
-      <button class="chip">Sparkling</button>
-      <button class="chip">Dessert</button>
-      <button class="chip">Fortified</button>
-    </div>
-    <button class="btn-ghost">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Region view
-    </button>
-  </div>
-  <div class="pair-row">
-    <span class="pair-label">PAIR WITH:</span>
-    <button class="chip gold-active">All</button>
-    <button class="chip">Beef</button>
-    <button class="chip">Charcuterie</button>
-    <button class="chip">Cheese</button>
-    <button class="chip">Chocolate</button>
-    <button class="chip">Dessert</button>
-    <button class="chip">Lamb</button>
-    <button class="chip">Pasta</button>
-    <button class="chip">Poultry</button>
-    <button class="chip">Salad</button>
-    <button class="chip">Seafood</button>
-    <button class="chip">Spicy</button>
-  </div>
-</div>
+    <div class="modal-body">
+      <!-- Wine title and Region -->
+      <div class="overview-hero-section">
+        <h2 class="overview-wine-title" id="modalWineTitle">Château Margaux</h2>
+        <div class="overview-wine-meta">
+          <span style="display:inline-flex; align-items:center; gap:5px;" id="modalWineRegion">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span id="modalRegionText">Margaux, Bordeaux, France</span>
+          </span>
+          <span class="overview-varietal-pill" id="modalVarietalPill">Bordeaux Blend</span>
+        </div>
+      </div>
 
-<div class="bottle-grid">
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag">Red</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Josh</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        America
+      <!-- 4 Key Details Cards -->
+      <div class="overview-metrics-grid">
+        <!-- 1. Type & Varietal -->
+        <div class="metric-box">
+          <div class="metric-label">WINE TYPE & VARIETAL</div>
+          <div class="metric-value" id="modalTypeVal">Red Wine</div>
+          <div class="metric-sub" id="modalVarietalSub">Cabernet Sauvignon / Merlot</div>
+        </div>
+
+        <!-- 2. Value / Worth -->
+        <div class="metric-box">
+          <div class="metric-label">ESTIMATED WORTH</div>
+          <div class="metric-value gold-text" id="modalWorthVal">$1,150 <span style="font-size: 13px; font-family:'Inter'; color:var(--text-muted);">/ bottle</span></div>
+          <div class="metric-sub" id="modalTotalWorthSub">Collection Lot: $2,300 total</div>
+        </div>
+
+        <!-- 3. Vintage & Age -->
+        <div class="metric-box">
+          <div class="metric-label">VINTAGE & CELLAR AGE</div>
+          <div class="metric-value" id="modalVintageVal">2010 Vintage</div>
+          <div class="metric-sub" id="modalAgeSub">16 Years Old (Bottled 2010)</div>
+        </div>
+
+        <!-- 4. Quantity in Cellar -->
+        <div class="metric-box">
+          <div class="metric-label">BOTTLES IN CELLAR</div>
+          <div class="qty-counter-row">
+            <button class="qty-stepper-btn" id="modalDecBtn" title="Drink/Decrease bottle">−</button>
+            <span class="metric-value" id="modalQtyVal" style="margin: 0; min-width: 24px; text-align: center;">2</span>
+            <button class="qty-stepper-btn" id="modalIncBtn" title="Add another bottle">+</button>
+            <span style="font-size: 13px; color: var(--gold); margin-left: 6px;" id="modalStockStatus">In Cellar</span>
+          </div>
+          <div class="metric-sub" id="modalQtySub">Tracked in personal collection</div>
+        </div>
+      </div>
+
+      <!-- Food Pairings Section -->
+      <div class="overview-section">
+        <div class="section-label">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
+          BEST FOOD PAIRINGS
+        </div>
+        <div class="pair-chips-list" id="modalPairChips">
+          <!-- Food pairings badges injected here -->
+        </div>
+        <div class="pair-description" id="modalPairGuide">
+          Pairs exquisitely with prime cuts of beef, roasted rack of lamb, and aged hard cheeses such as Comté and Parmigiano-Reggiano.
+        </div>
+      </div>
+
+      <!-- Sommelier & Tasting Notes -->
+      <div class="overview-section" style="margin-bottom:0;">
+        <div class="section-label">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 3h10l-1 8a4 4 0 01-8 0z"/></svg>
+          SOMMELIER TASTING PROFILE
+        </div>
+        <div class="sommelier-quote" id="modalNotesQuote">
+          "Silky tannins with an opulent bouquet of crushed violets, cassis, cigar box, and black truffles. Spectacular finish."
+        </div>
       </div>
     </div>
-  </div>
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag">Red</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Château Margaux</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Bordeaux, France
-      </div>
-    </div>
-  </div>
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag dessert">Dessert</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Château d'Yquem</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Sauternes, France
-      </div>
-    </div>
-  </div>
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag">Red</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Barolo, Falletto</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Piedmont, Italy
-      </div>
-    </div>
-  </div>
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag">White</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Chablis Grand Cru</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Burgundy, France
-      </div>
-    </div>
-  </div>
-  <div class="bottle-card">
-    <div class="bottle-image">
-      <span class="bottle-tag">Sparkling</span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.5" opacity="0.8"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
-    </div>
-    <div class="bottle-body">
-      <h3>Vintage Champagne</h3>
-      <div class="bottle-region">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Champagne, France
+
+    <div class="modal-footer">
+      <button class="btn-danger-ghost" id="deleteWineBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+        Remove from Cellar
+      </button>
+      <div class="modal-footer-right">
+        <button class="btn-ghost" id="uncorkBottleBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
+          Uncork 1 Bottle
+        </button>
+        <button class="btn-gold" id="doneOverviewBtn">Done</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ============================================== -->
+<!-- ADD WINE MODAL                                 -->
+<!-- ============================================== -->
+<div class="modal-backdrop" id="addWineModal" aria-hidden="true">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="addWineModalTitle">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="addWineModalTitle">Add Wine to Cellar</h2>
+        <div class="modal-subtitle">Log a new acquisition with valuation, age, and pairing notes</div>
+      </div>
+      <button class="modal-close-btn" id="closeAddWineBtn" aria-label="Close modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="addWineForm" class="modal-body" style="padding-top: 20px;">
+      <div class="form-row">
+        <div class="form-group flex-2">
+          <label for="inputName">Wine Name & Producer <span class="req">*</span></label>
+          <input type="text" id="inputName" class="form-input" placeholder="e.g. Caymus Special Selection" required>
+        </div>
+        <div class="form-group flex-1">
+          <label for="inputType">Type / Category <span class="req">*</span></label>
+          <select id="inputType" class="form-select" required>
+            <option value="Red">Red</option>
+            <option value="White">White</option>
+            <option value="Rosé">Rosé</option>
+            <option value="Sparkling">Sparkling</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Fortified">Fortified</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="inputVarietal">Grape / Varietal</label>
+          <input type="text" id="inputVarietal" class="form-input" placeholder="e.g. Cabernet Sauvignon, Pinot Noir">
+        </div>
+        <div class="form-group flex-1">
+          <label for="inputRegion">Region & Country <span class="req">*</span></label>
+          <input type="text" id="inputRegion" class="form-input" placeholder="e.g. Napa Valley, California" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="inputVintage">Vintage Year <span class="req">*</span></label>
+          <input type="number" id="inputVintage" class="form-input" min="1900" max="2030" value="2020" required>
+        </div>
+        <div class="form-group flex-1">
+          <label for="inputPrice">Worth per Bottle ($ USD) <span class="req">*</span></label>
+          <input type="number" id="inputPrice" class="form-input" min="0" step="1" placeholder="e.g. 150" required>
+        </div>
+        <div class="form-group flex-1">
+          <label for="inputQty">Number of Bottles <span class="req">*</span></label>
+          <input type="number" id="inputQty" class="form-input" min="1" max="999" value="1" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Food Pairings (Click to toggle)</label>
+        <div class="interactive-chips" id="formPairChips">
+          <span class="select-chip" data-val="Beef">Beef</span>
+          <span class="select-chip" data-val="Charcuterie">Charcuterie</span>
+          <span class="select-chip" data-val="Cheese">Cheese</span>
+          <span class="select-chip" data-val="Chocolate">Chocolate</span>
+          <span class="select-chip" data-val="Dessert">Dessert</span>
+          <span class="select-chip" data-val="Lamb">Lamb</span>
+          <span class="select-chip" data-val="Pasta">Pasta</span>
+          <span class="select-chip" data-val="Poultry">Poultry</span>
+          <span class="select-chip" data-val="Salad">Salad</span>
+          <span class="select-chip" data-val="Seafood">Seafood</span>
+          <span class="select-chip" data-val="Spicy">Spicy</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="inputMaturity">Maturity / Drinking Window</label>
+        <select id="inputMaturity" class="form-select">
+          <option value="Ready to Enjoy">Ready to Enjoy</option>
+          <option value="Peak Maturity" selected>Peak Maturity</option>
+          <option value="Aging Gracefully">Aging Gracefully</option>
+          <option value="Cellar Candidate">Cellar Candidate (Keep Aging)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="inputNotes">Tasting Profile & Cellar Remarks</label>
+        <textarea id="inputNotes" class="form-textarea" placeholder="Tasting profile, notes on acidity, fruit notes, oak aging, or pairing ideas..."></textarea>
+      </div>
+
+      <div class="modal-footer" style="padding: 16px 0 0; margin-top: 10px; background: transparent; border-top: 1px solid var(--hairline);">
+        <button type="button" class="btn-ghost" id="cancelAddWineBtn">Cancel</button>
+        <button type="submit" class="btn-gold">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add to Cellar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================== -->
+<!-- JAVASCRIPT LOGIC                               -->
+<!-- ============================================== -->
 <script>
-  // Filter chips click handling
-  document.querySelectorAll('.chip-row .chip, .pair-row .chip').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      var siblings = chip.parentElement.querySelectorAll('.chip');
-      siblings.forEach(c => c.classList.remove('active','gold-active'));
-      chip.classList.add(chip.parentElement.classList.contains('pair-row') ? 'gold-active' : (chip.textContent.trim()==='All' ? 'gold-active' : 'active'));
-    });
-  });
+  // ----------------------------------------------------
+  // INITIAL DEMO WINE CELLAR DATA
+  // Matches initial dashboard metrics: 7 wines, 16 bottles, $3,867 value, oldest 2010
+  // ----------------------------------------------------
+  const DEFAULT_CELLAR = [
+    {
+      id: "wine_margaux_2010",
+      name: "Château Margaux",
+      type: "Red",
+      varietal: "Bordeaux Blend (Cabernet / Merlot)",
+      region: "Margaux, Bordeaux, France",
+      vintage: 2010,
+      price: 1150,
+      quantity: 2,
+      maturity: "Peak Maturity",
+      pairings: ["Beef", "Lamb", "Cheese"],
+      notes: "First Growth Premier Grand Cru Classé. Silky tannins with opulent notes of crushed violets, blackcurrant, dark truffles, and cigar box. Spectacular longevity.",
+      pairingGuide: "Exceptional alongside prime grilled ribeye, roasted venison saddle, and aged Comté or farmhouse Cheddar."
+    },
+    {
+      id: "wine_yquem_2015",
+      name: "Château d'Yquem",
+      type: "Dessert",
+      varietal: "Sauternes (Sémillon / Sauvignon Blanc)",
+      region: "Sauternes, Bordeaux, France",
+      vintage: 2015,
+      price: 450,
+      quantity: 1,
+      maturity: "Aging Gracefully",
+      pairings: ["Dessert", "Cheese", "Poultry"],
+      notes: "The undisputed king of sweet Bordeaux. Honeyed apricot, candied citrus peel, white peach, roasted hazelnut, and incredible botrytis acidity.",
+      pairingGuide: "Glorious with pan-seared foie gras, artisanal Roquefort blue cheese, and fruit tarte tatin."
+    },
+    {
+      id: "wine_barolo_2016",
+      name: "Barolo, Falletto",
+      type: "Red",
+      varietal: "Nebbiolo",
+      region: "Piedmont, Italy",
+      vintage: 2016,
+      price: 180,
+      quantity: 2,
+      maturity: "Peak Maturity",
+      pairings: ["Beef", "Pasta", "Lamb", "Cheese"],
+      notes: "Bruno Giacosa classic. Alluring aromas of wild red cherries, dried rose petals, leather, tar, and noble alpine tannins with great structure.",
+      pairingGuide: "Perfect with braised beef short ribs, white truffle risotto, and rich pappardelle al ragù."
+    },
+    {
+      id: "wine_chablis_2019",
+      name: "Chablis Grand Cru",
+      type: "White",
+      varietal: "Chardonnay",
+      region: "Les Clos, Burgundy, France",
+      vintage: 2019,
+      price: 120,
+      quantity: 2,
+      maturity: "Ready to Enjoy",
+      pairings: ["Seafood", "Poultry", "Salad", "Cheese"],
+      notes: "Pristine flinty minerality, lemon curd, crushed chalk, and saline freshness. Subtle oak texture with vibrant cool-climate Burgundy tension.",
+      pairingGuide: "Flawless with fresh Brittany oysters, butter-poached Maine lobster, scallops, and Dover sole."
+    },
+    {
+      id: "wine_champagne_2012",
+      name: "Dom Pérignon Vintage",
+      type: "Sparkling",
+      varietal: "Champagne Blend (Chardonnay / Pinot)",
+      region: "Champagne, France",
+      vintage: 2012,
+      price: 190,
+      quantity: 2,
+      maturity: "Ready to Enjoy",
+      pairings: ["Seafood", "Charcuterie", "Cheese"],
+      notes: "Intense, smoky brioche, toasted almonds, lemon blossom, and a creamy, persistent mousse with vibrant chalky acidity.",
+      pairingGuide: "Pairs divinely with Ossetra caviar, Iberico ham, tempura prawns, and triple-crème Brie."
+    },
+    {
+      id: "wine_josh_2020",
+      name: "Josh Cellars Craftsman",
+      type: "Red",
+      varietal: "Cabernet Sauvignon",
+      region: "California, USA",
+      vintage: 2020,
+      price: 22,
+      quantity: 4,
+      maturity: "Ready to Enjoy",
+      pairings: ["Beef", "Pasta", "Cheese"],
+      notes: "Fruit-forward and approachable. Aromas of ripe black cherries, toasted hazelnut, mocha, and smooth French vanilla oak.",
+      pairingGuide: "An everyday favorite with smash burgers, BBQ sliders, pepperoni flatbread, and spaghetti Bolognese."
+    },
+    {
+      id: "wine_riscal_2018",
+      name: "Marqués de Riscal Reserva",
+      type: "Red",
+      varietal: "Tempranillo / Graciano",
+      region: "Rioja, Spain",
+      vintage: 2018,
+      price: 17,
+      quantity: 3,
+      maturity: "Peak Maturity",
+      pairings: ["Lamb", "Charcuterie", "Cheese", "Pasta"],
+      notes: "Classic Rioja complexity. Ripe blackberry, balsamic balsamic nuances, clove, coconut-vanilla from oak aging, and resolved velvety tannins.",
+      pairingGuide: "Pair with roasted lamb chops with rosemary, jamón Serrano, chorizo, and Manchego cheese."
+    }
+  ];
 
-  // Sync user profile from login session if available
-  (function initUserSession() {
+  // ----------------------------------------------------
+  // STATE MANAGEMENT
+  // ----------------------------------------------------
+  const STORAGE_KEY = 'vino_cellar_inventory_v2';
+  let cellar = [];
+  let activeWineId = null;
+  let activeTypeFilter = 'All';
+  let activePairFilter = 'All';
+  let searchQuery = '';
+
+  function loadCellar() {
     try {
-      const savedUser = localStorage.getItem('vino_user');
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        const nameEl = document.querySelector('.user-name');
-        const emailEl = document.querySelector('.user-email');
-        const avatarEl = document.querySelector('.avatar');
-
-        if (user.username && nameEl) {
-          nameEl.textContent = user.username;
-          
-          // Generate initials
-          const parts = user.username.trim().split(/\s+/);
-          let initials = 'LR';
-          if (parts.length >= 2) {
-            initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-          } else if (parts.length === 1 && parts[0].length >= 1) {
-            initials = parts[0].substring(0, 2).toUpperCase();
-          }
-          if (avatarEl) avatarEl.textContent = initials;
-        }
-
-        if (user.email && emailEl) {
-          emailEl.textContent = user.email;
-        }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        cellar = JSON.parse(saved);
+      } else {
+        cellar = JSON.parse(JSON.stringify(DEFAULT_CELLAR));
+        saveCellar();
       }
-    } catch(err) {
-      console.warn('Session load error:', err);
+    } catch(e) {
+      console.warn('Failed to parse saved cellar, loading defaults', e);
+      cellar = JSON.parse(JSON.stringify(DEFAULT_CELLAR));
+    }
+  }
+
+  function saveCellar() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cellar));
+    } catch(e) {
+      console.error('Storage error', e);
+    }
+  }
+
+  // ----------------------------------------------------
+  // STATS CALCULATION
+  // ----------------------------------------------------
+  function updateStats() {
+    const currentYear = new Date().getFullYear();
+    const distinctCount = cellar.length;
+    const totalBottles = cellar.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
+    const totalValue = cellar.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
+    
+    let oldestVintage = '—';
+    if (cellar.length > 0) {
+      const vintages = cellar.map(w => Number(w.vintage)).filter(v => !isNaN(v) && v > 0);
+      if (vintages.length > 0) oldestVintage = Math.min(...vintages);
     }
 
-    const signOutBtn = document.getElementById('signOutBtn');
-    if (signOutBtn) {
-      signOutBtn.addEventListener('click', function(e) {
-        // Optional clean up, then navigate
-        // localStorage.removeItem('vino_user');
-      });
+    document.getElementById('statDistinct').textContent = distinctCount;
+    document.getElementById('statBottles').textContent = totalBottles;
+    document.getElementById('statValue').textContent = '$' + totalValue.toLocaleString();
+    document.getElementById('statOldest').textContent = oldestVintage;
+  }
+
+  // ----------------------------------------------------
+  // CALCULATE WINE AGE
+  // ----------------------------------------------------
+  function getWineAge(vintage) {
+    const currentYear = new Date().getFullYear();
+    const v = Number(vintage);
+    if (isNaN(v) || v <= 0) return 'Age unknown';
+    const age = currentYear - v;
+    if (age <= 0) return 'Current Release';
+    if (age === 1) return '1 Year Old';
+    return `${age} Years Old`;
+  }
+
+  // ----------------------------------------------------
+  // SVG ARTWORK HELPER PER WINE TYPE
+  // ----------------------------------------------------
+  function getWineSvg(type) {
+    const t = (type || '').toLowerCase();
+    if (t.includes('dessert')) {
+      return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M8 2h8v5a4 4 0 01-4 4 4 4 0 01-4-4V2zM12 11v9M8 20h8"/></svg>`;
     }
-  })();
+    if (t.includes('sparkling')) {
+      return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M9 3h6l-1 9a3 3 0 01-4 0L9 3zM12 12v8M9 20h6"/><circle cx="12" cy="7" r="0.75" fill="#C9A15B"/><circle cx="11" cy="5" r="0.75" fill="#C9A15B"/><circle cx="13" cy="9" r="0.75" fill="#C9A15B"/></svg>`;
+    }
+    if (t.includes('white') || t.includes('rose')) {
+      return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M8 3h8l-1 7a3 3 0 01-6 0L8 3zM12 10v9M8 20h8"/></svg>`;
+    }
+    // Default Red / Bottle
+    return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>`;
+  }
+
+  // ----------------------------------------------------
+  // RENDER BOTTLE CARDS
+  // ----------------------------------------------------
+  function renderGrid() {
+    const grid = document.getElementById('bottleGrid');
+    const countDisplay = document.getElementById('gridCountDisplay');
+
+    // Filter cellar
+    const filtered = cellar.filter(w => {
+      // Type filter
+      if (activeTypeFilter !== 'All' && w.type.toLowerCase() !== activeTypeFilter.toLowerCase()) {
+        return false;
+      }
+      // Pairing filter
+      if (activePairFilter !== 'All') {
+        const matchesPair = (w.pairings || []).some(p => p.toLowerCase() === activePairFilter.toLowerCase());
+        if (!matchesPair) return false;
+      }
+      // Search query
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase();
+        const inName = (w.name || '').toLowerCase().includes(q);
+        const inRegion = (w.region || '').toLowerCase().includes(q);
+        const inVarietal = (w.varietal || '').toLowerCase().includes(q);
+        const inNotes = (w.notes || '').toLowerCase().includes(q);
+        if (!inName && !inRegion && !inVarietal && !inNotes) return false;
+      }
+      return true;
+    });
+
+    countDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${cellar.length}</strong> wines`;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <h3>No wines match your criteria</h3>
+          <p>Try clearing filters or search term to view your full collection.</p>
+          <button class="btn-ghost" onclick="clearAllFilters()">Clear All Filters</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(w => {
+      const typeClass = (w.type || 'red').toLowerCase().replace('é', 'e');
+      const ageStr = getWineAge(w.vintage);
+      const pairingsMini = (w.pairings || []).slice(0, 3).map(p => `<span class="pair-pill-mini">${p}</span>`).join('');
+      const worthFormatted = Number(w.price).toLocaleString();
+      const qty = Number(w.quantity) || 0;
+
+      return `
+        <div class="bottle-card" onclick="openOverview('${w.id}')" title="Click to view full sommelier overview">
+          <div class="bottle-image">
+            <span class="bottle-tag ${typeClass}">${w.type}</span>
+            <span class="bottle-qty-badge">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
+            <div class="bottle-bg-art">
+              ${getWineSvg(w.type)}
+            </div>
+          </div>
+          <div class="bottle-body">
+            <div class="bottle-header-row">
+              <h3>${escapeHtml(w.name)}</h3>
+            </div>
+            <div class="bottle-region">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              ${escapeHtml(w.region)}
+            </div>
+            <div class="bottle-varietal">${escapeHtml(w.varietal || w.type + ' Wine')}</div>
+
+            <div class="bottle-pair-preview">
+              ${pairingsMini}
+            </div>
+
+            <div class="bottle-meta-row">
+              <div class="bottle-worth">$${worthFormatted}</div>
+              <div class="bottle-age">${w.vintage} • ${ageStr}</div>
+            </div>
+
+            <div class="bottle-click-hint">
+              <span>View overview</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ----------------------------------------------------
+  // WINE OVERVIEW MODAL HANDLERS
+  // ----------------------------------------------------
+  function openOverview(wineId) {
+    const wine = cellar.find(w => w.id === wineId);
+    if (!wine) return;
+
+    activeWineId = wineId;
+    const currentYear = new Date().getFullYear();
+    const age = getWineAge(wine.vintage);
+    const typeClass = (wine.type || 'red').toLowerCase().replace('é', 'e');
+    const priceNum = Number(wine.price) || 0;
+    const qtyNum = Number(wine.quantity) || 0;
+    const totalWorth = priceNum * qtyNum;
+
+    // Header tags
+    const tagEl = document.getElementById('modalWineTypeTag');
+    tagEl.className = 'bottle-tag ' + typeClass;
+    tagEl.textContent = wine.type;
+
+    document.getElementById('modalAgeBadge').textContent = age;
+    document.getElementById('modalMaturityBadge').textContent = wine.maturity || 'Ready to Enjoy';
+
+    // Hero title & region
+    document.getElementById('modalWineTitle').textContent = wine.name;
+    document.getElementById('modalRegionText').textContent = wine.region;
+    document.getElementById('modalVarietalPill').textContent = wine.varietal || (wine.type + ' Wine');
+
+    // 4 Key Stats
+    document.getElementById('modalTypeVal').textContent = `${wine.type} Wine`;
+    document.getElementById('modalVarietalSub').textContent = wine.varietal || 'Single Varietal / Blend';
+
+    document.getElementById('modalWorthVal').innerHTML = `$${priceNum.toLocaleString()} <span style="font-size: 13px; font-family:'Inter'; color:var(--text-muted);">/ bottle</span>`;
+    document.getElementById('modalTotalWorthSub').textContent = `Collection Lot: $${totalWorth.toLocaleString()} total`;
+
+    document.getElementById('modalVintageVal').textContent = `${wine.vintage} Vintage`;
+    document.getElementById('modalAgeSub').textContent = `${age} (${currentYear - wine.vintage} yrs of cellaring)`;
+
+    document.getElementById('modalQtyVal').textContent = qtyNum;
+    document.getElementById('modalStockStatus').textContent = qtyNum > 0 ? `${qtyNum} In Cellar` : 'Depleted';
+    document.getElementById('modalQtySub').textContent = qtyNum === 1 ? '1 bottle remaining' : `${qtyNum} bottles in collection`;
+
+    // Food Pairings
+    const pairContainer = document.getElementById('modalPairChips');
+    if (wine.pairings && wine.pairings.length > 0) {
+      pairContainer.innerHTML = wine.pairings.map(p => `<span class="pair-badge">${escapeHtml(p)}</span>`).join('');
+    } else {
+      pairContainer.innerHTML = '<span class="pair-badge">Artisanal Cheeses</span><span class="pair-badge">Charcuterie</span>';
+    }
+
+    const pairGuide = wine.pairingGuide || `Pairs wonderfully with dishes harmonizing with ${wine.type.toLowerCase()} wine profiles, particularly ${ (wine.pairings || ['rich mains']).join(', ') }.`;
+    document.getElementById('modalPairGuide').textContent = pairGuide;
+
+    // Tasting Notes
+    const notes = wine.notes || 'Classic character with beautiful cellar evolution, balanced acidity, and generous aromatic finish.';
+    document.getElementById('modalNotesQuote').textContent = `"${notes}"`;
+
+    // Show modal
+    const modal = document.getElementById('overviewModal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOverview() {
+    const modal = document.getElementById('overviewModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    activeWineId = null;
+  }
+
+  // Adjust quantity from inside overview
+  function adjustWineQty(delta) {
+    if (!activeWineId) return;
+    const wine = cellar.find(w => w.id === activeWineId);
+    if (!wine) return;
+
+    let newQty = (Number(wine.quantity) || 0) + delta;
+    if (newQty < 0) newQty = 0;
+    wine.quantity = newQty;
+
+    saveCellar();
+    updateStats();
+    renderGrid();
+
+    // Update modal in place
+    openOverview(activeWineId);
+
+    if (delta < 0 && newQty === 0) {
+      showToast(`Finished last bottle of ${wine.name}`);
+    } else if (delta < 0) {
+      showToast(`Enjoy the bottle! ${newQty} bottle(s) remaining.`);
+    } else {
+      showToast(`Added 1 bottle of ${wine.name} (Now ${newQty})`);
+    }
+  }
+
+  function deleteActiveWine() {
+    if (!activeWineId) return;
+    const wine = cellar.find(w => w.id === activeWineId);
+    if (!wine) return;
+
+    if (confirm(`Are you sure you want to remove "${wine.name}" from your cellar collection?`)) {
+      cellar = cellar.filter(w => w.id !== activeWineId);
+      saveCellar();
+      updateStats();
+      renderGrid();
+      closeOverview();
+      showToast(`Removed "${wine.name}" from cellar`);
+    }
+  }
+
+  // ----------------------------------------------------
+  // ADD WINE MODAL HANDLERS
+  // ----------------------------------------------------
+  function openAddWineModal() {
+    const modal = document.getElementById('addWineModal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('inputName').focus();
+  }
+
+  function closeAddWineModal() {
+    const modal = document.getElementById('addWineModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    document.getElementById('addWineForm').reset();
+    document.querySelectorAll('#formPairChips .select-chip').forEach(c => c.classList.remove('selected'));
+  }
+
+  function handleAddWineSubmit(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('inputName').value.trim();
+    const type = document.getElementById('inputType').value;
+    const varietal = document.getElementById('inputVarietal').value.trim();
+    const region = document.getElementById('inputRegion').value.trim();
+    const vintage = parseInt(document.getElementById('inputVintage').value, 10);
+    const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+    const quantity = parseInt(document.getElementById('inputQty').value, 10) || 1;
+    const maturity = document.getElementById('inputMaturity').value;
+    const notes = document.getElementById('inputNotes').value.trim();
+
+    // Selected pairing chips
+    const selectedPairings = Array.from(document.querySelectorAll('#formPairChips .select-chip.selected'))
+      .map(chip => chip.getAttribute('data-val'));
+
+    const newWine = {
+      id: 'wine_' + Date.now(),
+      name,
+      type,
+      varietal: varietal || (type + ' Wine'),
+      region,
+      vintage: vintage || new Date().getFullYear(),
+      price: Math.round(price),
+      quantity: quantity > 0 ? quantity : 1,
+      maturity,
+      pairings: selectedPairings.length > 0 ? selectedPairings : ['Cheese', 'Charcuterie'],
+      notes: notes || 'Recently added cellar acquisition with superb aging potential.',
+      pairingGuide: `Pairs beautifully with dishes that elevate ${type.toLowerCase()} wine, such as ${ (selectedPairings.length ? selectedPairings : ['fine meats and cheeses']).join(', ') }.`
+    };
+
+    // Prepend to cellar list so newly added wine appears at top
+    cellar.unshift(newWine);
+    saveCellar();
+    updateStats();
+    renderGrid();
+    closeAddWineModal();
+
+    showToast(`✓ Added "${newWine.name}" to your cellar!`);
+  }
+
+  // ----------------------------------------------------
+  // TOAST NOTIFICATIONS
+  // ----------------------------------------------------
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+      <span class="toast-icon">★</span>
+      <span>${escapeHtml(message)}</span>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 20);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  // ----------------------------------------------------
+  // FILTERING LOGIC
+  // ----------------------------------------------------
+  function clearAllFilters() {
+    activeTypeFilter = 'All';
+    activePairFilter = 'All';
+    searchQuery = '';
+    document.getElementById('searchInput').value = '';
+
+    document.querySelectorAll('#typeChipRow .chip').forEach(c => {
+      c.classList.toggle('gold-active', c.getAttribute('data-type') === 'All');
+      c.classList.remove('active');
+    });
+
+    document.querySelectorAll('#pairChipRow .chip').forEach(c => {
+      c.classList.toggle('gold-active', c.getAttribute('data-pair') === 'All');
+      c.classList.remove('active');
+    });
+
+    renderGrid();
+  }
+
+  function setupFilters() {
+    // Search Input
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderGrid();
+    });
+
+    // Wine Type Chips
+    document.querySelectorAll('#typeChipRow .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#typeChipRow .chip').forEach(c => c.classList.remove('gold-active', 'active'));
+        const type = chip.getAttribute('data-type');
+        activeTypeFilter = type;
+        chip.classList.add(type === 'All' ? 'gold-active' : 'active');
+        renderGrid();
+      });
+    });
+
+    // Food Pairing Chips
+    document.querySelectorAll('#pairChipRow .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#pairChipRow .chip').forEach(c => c.classList.remove('gold-active', 'active'));
+        const pair = chip.getAttribute('data-pair');
+        activePairFilter = pair;
+        chip.classList.add('gold-active');
+        renderGrid();
+      });
+    });
+
+    // Form pairing chips toggle in Add Wine dialog
+    document.querySelectorAll('#formPairChips .select-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('selected');
+      });
+    });
+
+    // Reset Demo button
+    document.getElementById('resetDemoBtn').addEventListener('click', () => {
+      if (confirm('Reset cellar to original 7 default wines ($3,867 / 16 bottles)?')) {
+        cellar = JSON.parse(JSON.stringify(DEFAULT_CELLAR));
+        saveCellar();
+        clearAllFilters();
+        updateStats();
+        renderGrid();
+        showToast('Restored default cellar collection');
+      }
+    });
+
+    // Scroll to grid on "My Cellar" click
+    document.getElementById('topMyCellarBtn').addEventListener('click', () => {
+      clearAllFilters();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ----------------------------------------------------
+  // EVENT LISTENERS & INITIALIZATION
+  // ----------------------------------------------------
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCellar();
+    updateStats();
+    setupFilters();
+    renderGrid();
+
+    // Wire Add Wine Buttons
+    document.getElementById('openAddWineBtnTop').addEventListener('click', openAddWineModal);
+    document.getElementById('openAddWineBtnHero').addEventListener('click', openAddWineModal);
+    document.getElementById('closeAddWineBtn').addEventListener('click', closeAddWineModal);
+    document.getElementById('cancelAddWineBtn').addEventListener('click', closeAddWineModal);
+    document.getElementById('addWineForm').addEventListener('submit', handleAddWineSubmit);
+
+    // Wire Overview Modal controls
+    document.getElementById('closeOverviewBtn').addEventListener('click', closeOverview);
+    document.getElementById('doneOverviewBtn').addEventListener('click', closeOverview);
+    document.getElementById('modalIncBtn').addEventListener('click', () => adjustWineQty(1));
+    document.getElementById('modalDecBtn').addEventListener('click', () => adjustWineQty(-1));
+    document.getElementById('uncorkBottleBtn').addEventListener('click', () => adjustWineQty(-1));
+    document.getElementById('deleteWineBtn').addEventListener('click', deleteActiveWine);
+
+    // Close on backdrop click
+    document.getElementById('overviewModal').addEventListener('click', (e) => {
+      if (e.target.id === 'overviewModal') closeOverview();
+    });
+    document.getElementById('addWineModal').addEventListener('click', (e) => {
+      if (e.target.id === 'addWineModal') closeAddWineModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeOverview();
+        closeAddWineModal();
+      }
+    });
+
+    // Load user session if logged in
+    (function initUserSession() {
+      try {
+        const savedUser = localStorage.getItem('vino_user');
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          const nameEl = document.querySelector('.user-name');
+          const emailEl = document.querySelector('.user-email');
+          const avatarEl = document.querySelector('.avatar');
+
+          if (user.username && nameEl) {
+            nameEl.textContent = user.username;
+            const parts = user.username.trim().split(/\s+/);
+            let initials = 'LR';
+            if (parts.length >= 2) {
+              initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            } else if (parts.length === 1 && parts[0].length >= 1) {
+              initials = parts[0].substring(0, 2).toUpperCase();
+            }
+            if (avatarEl) avatarEl.textContent = initials;
+          }
+
+          if (user.email && emailEl) {
+            emailEl.textContent = user.email;
+          }
+        }
+      } catch(err) {
+        console.warn('Session load error:', err);
+      }
+    })();
+  });
 </script>
 
 </body>
