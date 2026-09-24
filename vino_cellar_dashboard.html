@@ -153,25 +153,50 @@
 
   .hero-right{ display:flex; align-items:center; gap: 14px; }
 
+  /* Interactive User Card */
   .user-card{
     display:flex; align-items:center; gap: 12px;
     background: var(--surface);
     border: 1px solid var(--hairline);
-    border-radius: 10px;
-    padding: 10px 18px;
+    border-radius: 12px;
+    padding: 9px 16px 9px 12px;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    position: relative;
+  }
+  .user-card:hover{
+    border-color: var(--gold);
+    background: var(--surface-2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(201, 161, 91, 0.15);
   }
 
   .avatar{
-    width: 38px; height: 38px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     background: var(--wine-deep);
-    border: 1px solid var(--hairline-gold);
+    border: 1.5px solid var(--gold);
     display:flex; align-items:center; justify-content:center;
-    font-size: 13px; font-weight: 600; color: var(--gold);
+    font-size: 13.5px; font-weight: 600; color: var(--gold);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    flex-shrink: 0;
   }
 
   .user-name{ font-size: 14px; font-weight: 500; }
   .user-email{ font-size: 12px; color: var(--text-muted); }
+
+  .user-card-hint {
+    color: var(--gold-dim);
+    display: flex;
+    align-items: center;
+    margin-left: 4px;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .user-card:hover .user-card-hint {
+    color: var(--gold);
+    transform: translateX(2px);
+  }
 
   /* ---------- STATS ---------- */
   .stats-row{
@@ -215,14 +240,14 @@
   .search-row{
     display:flex;
     align-items:center;
-    gap: 14px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
   }
 
   .search-box{
     flex: 1;
-    min-width: 260px;
+    min-width: 240px;
     display:flex;
     align-items:center;
     gap: 10px;
@@ -280,6 +305,38 @@
     font-weight: 600;
   }
 
+  /* Region Categorization View Toggle Button */
+  .btn-region-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    color: var(--text-muted);
+    padding: 9px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+  }
+  .btn-region-toggle:hover {
+    border-color: var(--gold);
+    color: #fff;
+    background: var(--surface-2);
+  }
+  .btn-region-toggle.active {
+    background: var(--wine);
+    border-color: var(--gold);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(122, 26, 46, 0.4);
+    font-weight: 500;
+  }
+  .btn-region-toggle.active svg {
+    stroke: var(--gold);
+  }
+
   .pair-row{
     display:flex;
     align-items:center;
@@ -296,18 +353,41 @@
     font-weight: 600;
   }
 
+  /* Specific Region Filter Pills Bar (Active in Region View) */
+  .region-filter-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--hairline);
+    animation: fadeIn 0.3s ease;
+  }
+  .region-filter-bar.show {
+    display: flex;
+  }
+
   /* Grid info header */
   .grid-header {
     display:flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 40px 14px;
+    padding: 6px 40px 16px;
     color: var(--text-muted);
     font-size: 13px;
   }
   .grid-count strong { color: var(--text); }
+  .view-mode-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gold);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
 
-  /* ---------- BOTTLE GRID ---------- */
+  /* ---------- BOTTLE GRID & REGION CATEGORIZATION ---------- */
   .bottle-grid{
     display:grid;
     grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
@@ -315,6 +395,83 @@
     padding: 0 40px 48px;
   }
 
+  /* Region Grouping Wrapper */
+  .region-category-container {
+    padding: 0 40px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .region-group-card {
+    background: rgba(34, 16, 19, 0.45);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 22px 24px;
+    transition: border-color 0.2s ease;
+  }
+  .region-group-card:hover {
+    border-color: rgba(201, 161, 91, 0.35);
+  }
+
+  .region-header-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hairline);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .region-title-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .region-icon-badge {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline-gold);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .region-title-info h2 {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0 0 3px;
+    color: #fff;
+  }
+  .region-meta-sub {
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  .region-val-pill {
+    background: rgba(201, 161, 91, 0.12);
+    border: 1px solid var(--hairline-gold);
+    color: var(--gold);
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Fraunces', serif;
+  }
+
+  .region-bottles-subgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+
+  /* Individual Bottle Card */
   .bottle-card{
     background: var(--surface);
     border: 1px solid var(--hairline);
@@ -417,7 +574,7 @@
     gap: 6px;
     font-size: 12.5px;
     color: var(--text-muted);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .bottle-varietal {
@@ -491,7 +648,7 @@
   .empty-state h3 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
   .empty-state p { margin-bottom: 20px; font-size: 14px; }
 
-  /* ---------- MODALS (OVERVIEW & ADD WINE) ---------- */
+  /* ---------- MODALS (OVERVIEW, ADD WINE, PROFILE) ---------- */
   .modal-backdrop{
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -851,6 +1008,132 @@
     box-shadow: 0 2px 8px rgba(122, 26, 46, 0.4);
   }
 
+  /* ---------- USER PROFILE MODAL STYLES ---------- */
+  .profile-hero {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 24px;
+  }
+
+  .profile-avatar-large {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%);
+    border: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--gold);
+    box-shadow: 0 4px 18px rgba(201, 161, 91, 0.3);
+    flex-shrink: 0;
+  }
+
+  .profile-identity h2 {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    color: #fff;
+  }
+  .profile-identity .profile-email {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .sommelier-tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: rgba(201, 161, 91, 0.15);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+
+  .profile-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .profile-metric-box {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .profile-metric-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.6px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .profile-metric-num {
+    font-size: 22px;
+    font-family: 'Fraunces', serif;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .profile-metric-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .profile-insight-list {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+  .profile-insight-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 13.5px;
+  }
+  .profile-insight-item:last-child {
+    border-bottom: none;
+  }
+  .insight-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+  }
+  .insight-value {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Inline edit profile section */
+  .profile-edit-box {
+    display: none;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .profile-edit-box.show {
+    display: block;
+  }
+
   /* Toast Notification */
   .toast-container{
     position: fixed;
@@ -886,17 +1169,23 @@
     font-size: 16px;
   }
 
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @media (max-width: 900px){
     .stats-row{ grid-template-columns: repeat(2, 1fr); }
     .hero{ flex-direction: column; align-items: flex-start; }
-    .overview-metrics-grid{ grid-template-columns: 1fr; }
+    .overview-metrics-grid, .profile-metrics-grid{ grid-template-columns: 1fr; }
   }
   @media (max-width: 560px){
     .stats-row{ grid-template-columns: 1fr; }
-    .topbar, .hero, .filter-section, .bottle-grid, .grid-header{ padding-left: 20px; padding-right: 20px; }
+    .topbar, .hero, .filter-section, .bottle-grid, .grid-header, .region-category-container{ padding-left: 20px; padding-right: 20px; }
     .form-row{ flex-direction: column; gap: 0; }
     .modal-footer{ flex-direction: column; align-items: stretch; }
     .modal-footer-right{ flex-direction: column; }
+    .profile-hero { flex-direction: column; align-items: flex-start; text-align: left; }
   }
 </style>
 </head>
@@ -946,16 +1235,21 @@
   <div class="hero">
     <div>
       <h1>My Cellar</h1>
-      <div class="sub">Every bottle, tracked and aging gracefully. Click any wine to view its complete sommelier overview.</div>
+      <div class="sub">Every bottle, tracked and aging gracefully. Click any wine to view its overview, or click your profile on the right.</div>
     </div>
     <div class="hero-right">
-      <div class="user-card">
-        <div class="avatar">LR</div>
+      <!-- Clickable User Profile Card on the right-hand side -->
+      <div class="user-card" id="userCardBtn" role="button" tabindex="0" title="Click to view your profile and cellar history">
+        <div class="avatar" id="heroAvatar">LR</div>
         <div>
-          <div class="user-name">Luke R</div>
-          <div class="user-email">lukeroch38@example.com</div>
+          <div class="user-name" id="heroUserName">Luke R</div>
+          <div class="user-email" id="heroUserEmail">lukeroch38@example.com</div>
+        </div>
+        <div class="user-card-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
       </div>
+
       <button class="btn-gold" id="openAddWineBtnHero">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Add Wine
@@ -1010,6 +1304,8 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input type="text" id="searchInput" placeholder="Search by wine name, varietal, or region...">
       </div>
+
+      <!-- Wine Category chips -->
       <div class="chip-row" id="typeChipRow">
         <button class="chip gold-active" data-type="All">All</button>
         <button class="chip" data-type="Red">Red</button>
@@ -1019,11 +1315,25 @@
         <button class="chip" data-type="Dessert">Dessert</button>
         <button class="chip" data-type="Fortified">Fortified</button>
       </div>
+
+      <!-- Categorize by Region Toggle Button -->
+      <button class="btn-region-toggle" id="toggleRegionViewBtn" title="Toggle grouping and categorizing wines by their origin region">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="regionToggleBtnText">Categorize by Region</span>
+      </button>
+
       <button class="btn-ghost" id="resetDemoBtn" title="Reset to default luxury cellar demo collection">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         Reset Demo
       </button>
     </div>
+
+    <!-- Dynamic Region Filter Chips (Shown when Region categorization is toggled on) -->
+    <div class="region-filter-bar" id="regionFilterBar">
+      <span class="pair-label">FILTER REGION:</span>
+      <div id="dynamicRegionChips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    </div>
+
     <div class="pair-row" id="pairChipRow">
       <span class="pair-label">PAIR WITH:</span>
       <button class="chip gold-active" data-pair="All">All</button>
@@ -1043,12 +1353,148 @@
 
   <div class="grid-header">
     <div class="grid-count" id="gridCountDisplay">Showing <strong>7</strong> wines</div>
-    <div style="font-size: 12px; color: var(--gold-dim);">Tip: Click any bottle to view food pairings & sommelier details</div>
+    <div class="view-mode-indicator" id="viewModeIndicator">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Standard Grid View</span>
+    </div>
   </div>
 
-  <!-- ---------- BOTTLE GRID ---------- -->
+  <!-- CONTAINER FOR STANDARD GRID -->
   <div class="bottle-grid" id="bottleGrid">
     <!-- Wine cards injected dynamically -->
+  </div>
+
+  <!-- CONTAINER FOR REGION CATEGORIZED VIEW -->
+  <div class="region-category-container" id="regionContainer" style="display: none;">
+    <!-- Grouped region sections injected dynamically -->
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- USER PROFILE OVERVIEW MODAL                    -->
+<!-- ============================================== -->
+<div class="modal-backdrop" id="profileModal" aria-hidden="true">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="profileModalTitle">Sommelier Profile</h2>
+        <div class="modal-subtitle">Personal cellar analytics, tenure & connoisseur membership</div>
+      </div>
+      <button class="modal-close-btn" id="closeProfileBtn" aria-label="Close profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Profile Header Hero -->
+      <div class="profile-hero">
+        <div class="profile-avatar-large" id="profileModalAvatar">LR</div>
+        <div class="profile-identity">
+          <h2 id="profileModalName">Luke R</h2>
+          <div class="profile-email" id="profileModalEmail">lukeroch38@example.com</div>
+          <div class="sommelier-tier-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Cellar Master • Grand Cru Tier
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Core Metrics Grid -->
+      <div class="profile-metrics-grid">
+        <!-- 1. Total Bottles -->
+        <div class="profile-metric-box">
+          <div class="profile-metric-title">TOTAL BOTTLES IN CELLAR</div>
+          <div class="profile-metric-num" id="profileTotalBottles">16 Bottles</div>
+          <div class="profile-metric-sub">Actively aging in collection</div>
+        </div>
+
+        <!-- 2. Distinct Wines -->
+        <div class="profile-metric-box">
+          <div class="profile-metric-title">DISTINCT LABELS</div>
+          <div class="profile-metric-num" id="profileDistinctLabels">7 Wines</div>
+          <div class="profile-metric-sub">Across 6 prestigious wine regions</div>
+        </div>
+
+        <!-- 3. Total Valuation -->
+        <div class="profile-metric-box">
+          <div class="profile-metric-title">TOTAL COLLECTION WORTH</div>
+          <div class="profile-metric-num" id="profileCollectionWorth" style="color:var(--gold);">$3,867</div>
+          <div class="profile-metric-sub">Estimated secondary market value</div>
+        </div>
+
+        <!-- 4. App Tenure / Member Since -->
+        <div class="profile-metric-box">
+          <div class="profile-metric-title">APP TENURE & CELLAR HISTORY</div>
+          <div class="profile-metric-num" id="profileTenureYears">1 Year, 11 Mos</div>
+          <div class="profile-metric-sub" id="profileMemberSinceSub">Member since Oct 15, 2024</div>
+        </div>
+      </div>
+
+      <!-- Collection Insights List -->
+      <div class="profile-insight-list">
+        <div class="profile-insight-item">
+          <div class="insight-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Top Cellared Region
+          </div>
+          <div class="insight-value" id="profileTopRegion">Bordeaux, France (3 bottles)</div>
+        </div>
+        <div class="profile-insight-item">
+          <div class="insight-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Cellar Crown Jewel
+          </div>
+          <div class="insight-value" id="profileCrownJewel">Château Margaux 2010 ($1,150)</div>
+        </div>
+        <div class="profile-insight-item">
+          <div class="insight-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10M16 2c0 5-8 5-8 10s8 5 8 10"/></svg>
+            Oldest Bottling
+          </div>
+          <div class="insight-value" id="profileOldestVintage">2010 Vintage (16 Years Old)</div>
+        </div>
+        <div class="profile-insight-item">
+          <div class="insight-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>
+            Bottles Uncorked & Logged
+          </div>
+          <div class="insight-value" id="profileBottlesUncorked">5 Bottles enjoyed</div>
+        </div>
+      </div>
+
+      <!-- Quick Edit Profile Panel -->
+      <div class="profile-edit-box" id="profileEditBox">
+        <h3 style="font-size:16px; margin:0 0 12px; color:#fff;">Update Sommelier Details</h3>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="editProfileName">Name</label>
+            <input type="text" id="editProfileName" class="form-input">
+          </div>
+          <div class="form-group flex-1">
+            <label for="editProfileEmail">Email</label>
+            <input type="email" id="editProfileEmail" class="form-input">
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+          <button type="button" class="btn-ghost" id="cancelEditProfileBtn">Cancel</button>
+          <button type="button" class="btn-gold" id="saveProfileBtn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <a href="login.html" class="btn-danger-ghost" id="profileSignOutBtn" style="text-decoration:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Sign Out
+      </a>
+      <div class="modal-footer-right">
+        <button class="btn-ghost" id="toggleEditProfileBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit Profile
+        </button>
+        <button class="btn-gold" id="closeProfileDoneBtn">Done</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1382,7 +1828,10 @@
   let activeWineId = null;
   let activeTypeFilter = 'All';
   let activePairFilter = 'All';
+  let activeRegionFilter = 'All';
   let searchQuery = '';
+  let viewMode = 'grid'; // 'grid' or 'region'
+  let bottlesConsumedCount = 5;
 
   function loadCellar() {
     try {
@@ -1411,7 +1860,6 @@
   // STATS CALCULATION
   // ----------------------------------------------------
   function updateStats() {
-    const currentYear = new Date().getFullYear();
     const distinctCount = cellar.length;
     const totalBottles = cellar.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
     const totalValue = cellar.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
@@ -1442,6 +1890,33 @@
   }
 
   // ----------------------------------------------------
+  // TIME USING APP (MEMBER TENURE)
+  // ----------------------------------------------------
+  function getAppTenureDetails(joinDateStr) {
+    const joinDate = new Date(joinDateStr || '2024-10-15');
+    const now = new Date();
+    
+    let years = now.getFullYear() - joinDate.getFullYear();
+    let months = now.getMonth() - joinDate.getMonth();
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    const parts = [];
+    if (years > 0) parts.push(`${years} ${years === 1 ? 'Year' : 'Years'}`);
+    if (months > 0) parts.push(`${months} ${months === 1 ? 'Month' : 'Months'}`);
+    if (parts.length === 0) parts.push('Less than 1 month');
+
+    const formattedDate = joinDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    return {
+      tenureString: parts.join(', '),
+      memberSinceString: `Member since ${formattedDate}`
+    };
+  }
+
+  // ----------------------------------------------------
   // SVG ARTWORK HELPER PER WINE TYPE
   // ----------------------------------------------------
   function getWineSvg(type) {
@@ -1455,22 +1930,69 @@
     if (t.includes('white') || t.includes('rose')) {
       return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M8 3h8l-1 7a3 3 0 01-6 0L8 3zM12 10v9M8 20h8"/></svg>`;
     }
-    // Default Red / Bottle
     return `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C9A15B" stroke-width="1.3"><path d="M8 3h8l-1 6a3 3 0 01-6 0z"/><path d="M12 9v9M8 21h8"/></svg>`;
   }
 
   // ----------------------------------------------------
-  // RENDER BOTTLE CARDS
+  // SINGLE BOTTLE CARD HTML BUILDER
   // ----------------------------------------------------
-  function renderGrid() {
-    const grid = document.getElementById('bottleGrid');
-    const countDisplay = document.getElementById('gridCountDisplay');
+  function buildBottleCardHtml(w) {
+    const typeClass = (w.type || 'red').toLowerCase().replace('é', 'e');
+    const ageStr = getWineAge(w.vintage);
+    const pairingsMini = (w.pairings || []).slice(0, 3).map(p => `<span class="pair-pill-mini">${escapeHtml(p)}</span>`).join('');
+    const worthFormatted = Number(w.price).toLocaleString();
+    const qty = Number(w.quantity) || 0;
 
-    // Filter cellar
-    const filtered = cellar.filter(w => {
+    return `
+      <div class="bottle-card" onclick="openOverview('${w.id}')" title="Click to view full sommelier overview">
+        <div class="bottle-image">
+          <span class="bottle-tag ${typeClass}">${escapeHtml(w.type)}</span>
+          <span class="bottle-qty-badge">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
+          <div class="bottle-bg-art">
+            ${getWineSvg(w.type)}
+          </div>
+        </div>
+        <div class="bottle-body">
+          <div class="bottle-header-row">
+            <h3>${escapeHtml(w.name)}</h3>
+          </div>
+          <div class="bottle-region">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            ${escapeHtml(w.region)}
+          </div>
+          <div class="bottle-varietal">${escapeHtml(w.varietal || w.type + ' Wine')}</div>
+
+          <div class="bottle-pair-preview">
+            ${pairingsMini}
+          </div>
+
+          <div class="bottle-meta-row">
+            <div class="bottle-worth">$${worthFormatted}</div>
+            <div class="bottle-age">${w.vintage} • ${ageStr}</div>
+          </div>
+
+          <div class="bottle-click-hint">
+            <span>View overview</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------------
+  // FILTERING HELPER
+  // ----------------------------------------------------
+  function getFilteredWines() {
+    return cellar.filter(w => {
       // Type filter
       if (activeTypeFilter !== 'All' && w.type.toLowerCase() !== activeTypeFilter.toLowerCase()) {
         return false;
+      }
+      // Region filter
+      if (activeRegionFilter !== 'All') {
+        const normRegion = (w.region || '').toLowerCase();
+        if (!normRegion.includes(activeRegionFilter.toLowerCase())) return false;
       }
       // Pairing filter
       if (activePairFilter !== 'All') {
@@ -1488,63 +2010,298 @@
       }
       return true;
     });
+  }
 
-    countDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${cellar.length}</strong> wines`;
+  // ----------------------------------------------------
+  // RENDER MAIN VIEW (STANDARD GRID OR REGION CATEGORIZED)
+  // ----------------------------------------------------
+  function renderMain() {
+    const gridContainer = document.getElementById('bottleGrid');
+    const regionContainer = document.getElementById('regionContainer');
+    const countDisplay = document.getElementById('gridCountDisplay');
+    const modeIndicator = document.getElementById('viewModeIndicator');
 
-    if (filtered.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <h3>No wines match your criteria</h3>
-          <p>Try clearing filters or search term to view your full collection.</p>
-          <button class="btn-ghost" onclick="clearAllFilters()">Clear All Filters</button>
-        </div>
+    const filtered = getFilteredWines();
+
+    if (viewMode === 'grid') {
+      gridContainer.style.display = 'grid';
+      regionContainer.style.display = 'none';
+      modeIndicator.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Standard Grid View</span>
       `;
-      return;
+      countDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${cellar.length}</strong> wines`;
+
+      if (filtered.length === 0) {
+        gridContainer.innerHTML = `
+          <div class="empty-state">
+            <h3>No wines match your criteria</h3>
+            <p>Try clearing your search, type, or food pairing filters.</p>
+            <button class="btn-ghost" onclick="clearAllFilters()">Clear All Filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      gridContainer.innerHTML = filtered.map(w => buildBottleCardHtml(w)).join('');
+    } else {
+      // REGION CATEGORIZED VIEW
+      gridContainer.style.display = 'none';
+      regionContainer.style.display = 'flex';
+      modeIndicator.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>Categorized by Region</span>
+      `;
+
+      if (filtered.length === 0) {
+        regionContainer.innerHTML = `
+          <div class="empty-state">
+            <h3>No wines in this region view</h3>
+            <p>Try clearing filters to see your full regional collection.</p>
+            <button class="btn-ghost" onclick="clearAllFilters()">Clear All Filters</button>
+          </div>
+        `;
+        countDisplay.innerHTML = `Showing <strong>0</strong> wines`;
+        return;
+      }
+
+      // Group wines by region
+      const regionsMap = {};
+      filtered.forEach(w => {
+        const regionKey = w.region || 'Unspecified Region';
+        if (!regionsMap[regionKey]) {
+          regionsMap[regionKey] = [];
+        }
+        regionsMap[regionKey].push(w);
+      });
+
+      const regionKeys = Object.keys(regionsMap).sort();
+      countDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> wines across <strong>${regionKeys.length}</strong> regions`;
+
+      regionContainer.innerHTML = regionKeys.map(regName => {
+        const winesInRegion = regionsMap[regName];
+        const regBottles = winesInRegion.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
+        const regValue = winesInRegion.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
+
+        return `
+          <div class="region-group-card">
+            <div class="region-header-banner">
+              <div class="region-title-info">
+                <div class="region-icon-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                </div>
+                <div>
+                  <h2>${escapeHtml(regName)}</h2>
+                  <div class="region-meta-sub">${winesInRegion.length} distinct ${winesInRegion.length === 1 ? 'wine' : 'wines'} • ${regBottles} ${regBottles === 1 ? 'bottle' : 'bottles'} total</div>
+                </div>
+              </div>
+              <div class="region-val-pill">
+                $${regValue.toLocaleString()} Regional Value
+              </div>
+            </div>
+
+            <div class="region-bottles-subgrid">
+              ${winesInRegion.map(w => buildBottleCardHtml(w)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // ----------------------------------------------------
+  // POPULATE DYNAMIC REGION FILTER CHIPS
+  // ----------------------------------------------------
+  function updateRegionFilterChips() {
+    const chipContainer = document.getElementById('dynamicRegionChips');
+    if (!chipContainer) return;
+
+    // Extract unique regions
+    const uniqueRegions = Array.from(new Set(cellar.map(w => w.region).filter(Boolean))).sort();
+
+    let html = `<button class="chip ${activeRegionFilter === 'All' ? 'gold-active' : ''}" data-region="All">All Regions</button>`;
+    uniqueRegions.forEach(r => {
+      const isSelected = activeRegionFilter.toLowerCase() === r.toLowerCase();
+      html += `<button class="chip ${isSelected ? 'gold-active' : ''}" data-region="${escapeHtml(r)}">${escapeHtml(r)}</button>`;
+    });
+
+    chipContainer.innerHTML = html;
+
+    chipContainer.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chipContainer.querySelectorAll('.chip').forEach(c => c.classList.remove('gold-active', 'active'));
+        const region = btn.getAttribute('data-region');
+        activeRegionFilter = region;
+        btn.classList.add('gold-active');
+        renderMain();
+      });
+    });
+  }
+
+  // ----------------------------------------------------
+  // TOGGLE REGION CATEGORIZATION VIEW
+  // ----------------------------------------------------
+  function toggleRegionView() {
+    const btn = document.getElementById('toggleRegionViewBtn');
+    const textSpan = document.getElementById('regionToggleBtnText');
+    const regionBar = document.getElementById('regionFilterBar');
+
+    if (viewMode === 'grid') {
+      viewMode = 'region';
+      btn.classList.add('active');
+      textSpan.textContent = 'Categorized by Region ✓';
+      regionBar.classList.add('show');
+      showToast('Categorized cellar by wine regions');
+    } else {
+      viewMode = 'grid';
+      btn.classList.remove('active');
+      textSpan.textContent = 'Categorize by Region';
+      regionBar.classList.remove('show');
+      activeRegionFilter = 'All';
+      showToast('Switched back to standard grid view');
     }
 
-    grid.innerHTML = filtered.map(w => {
-      const typeClass = (w.type || 'red').toLowerCase().replace('é', 'e');
-      const ageStr = getWineAge(w.vintage);
-      const pairingsMini = (w.pairings || []).slice(0, 3).map(p => `<span class="pair-pill-mini">${p}</span>`).join('');
-      const worthFormatted = Number(w.price).toLocaleString();
-      const qty = Number(w.quantity) || 0;
+    updateRegionFilterChips();
+    renderMain();
+  }
 
-      return `
-        <div class="bottle-card" onclick="openOverview('${w.id}')" title="Click to view full sommelier overview">
-          <div class="bottle-image">
-            <span class="bottle-tag ${typeClass}">${w.type}</span>
-            <span class="bottle-qty-badge">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
-            <div class="bottle-bg-art">
-              ${getWineSvg(w.type)}
-            </div>
-          </div>
-          <div class="bottle-body">
-            <div class="bottle-header-row">
-              <h3>${escapeHtml(w.name)}</h3>
-            </div>
-            <div class="bottle-region">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-              ${escapeHtml(w.region)}
-            </div>
-            <div class="bottle-varietal">${escapeHtml(w.varietal || w.type + ' Wine')}</div>
+  // ----------------------------------------------------
+  // USER PROFILE MODAL
+  // ----------------------------------------------------
+  function openProfileModal() {
+    const modal = document.getElementById('profileModal');
+    let user = { username: 'Luke R', email: 'lukeroch38@example.com', memberSince: '2024-10-15' };
+    
+    try {
+      const savedUser = localStorage.getItem('vino_user');
+      if (savedUser) {
+        user = Object.assign(user, JSON.parse(savedUser));
+      }
+    } catch(e) {}
 
-            <div class="bottle-pair-preview">
-              ${pairingsMini}
-            </div>
+    // Initials
+    const parts = (user.username || 'Luke R').trim().split(/\s+/);
+    let initials = 'LR';
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else if (parts.length === 1 && parts[0].length >= 1) {
+      initials = parts[0].substring(0, 2).toUpperCase();
+    }
 
-            <div class="bottle-meta-row">
-              <div class="bottle-worth">$${worthFormatted}</div>
-              <div class="bottle-age">${w.vintage} • ${ageStr}</div>
-            </div>
+    // Set Header
+    document.getElementById('profileModalAvatar').textContent = initials;
+    document.getElementById('profileModalName').textContent = user.username || 'Luke R';
+    document.getElementById('profileModalEmail').textContent = user.email || 'lukeroch38@example.com';
 
-            <div class="bottle-click-hint">
-              <span>View overview</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    // Metrics
+    const totalBottles = cellar.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
+    const distinctCount = cellar.length;
+    const totalValue = cellar.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
+
+    document.getElementById('profileTotalBottles').textContent = `${totalBottles} ${totalBottles === 1 ? 'Bottle' : 'Bottles'}`;
+    document.getElementById('profileDistinctLabels').textContent = `${distinctCount} ${distinctCount === 1 ? 'Wine' : 'Wines'}`;
+    document.getElementById('profileCollectionWorth').textContent = `$${totalValue.toLocaleString()}`;
+
+    // App Tenure
+    const tenure = getAppTenureDetails(user.memberSince || '2024-10-15');
+    document.getElementById('profileTenureYears').textContent = tenure.tenureString;
+    document.getElementById('profileMemberSinceSub').textContent = tenure.memberSinceString;
+
+    // Top Region Calculation
+    const regionCounts = {};
+    cellar.forEach(w => {
+      const r = w.region || 'Other';
+      regionCounts[r] = (regionCounts[r] || 0) + (Number(w.quantity) || 0);
+    });
+    let topRegionName = 'Bordeaux, France';
+    let maxCount = 0;
+    for (const [r, count] of Object.entries(regionCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        topRegionName = r;
+      }
+    }
+    document.getElementById('profileTopRegion').textContent = `${topRegionName} (${maxCount} bottles)`;
+
+    // Crown Jewel (highest price bottle)
+    let crownJewel = null;
+    let maxPrice = -1;
+    cellar.forEach(w => {
+      if (Number(w.price) > maxPrice) {
+        maxPrice = Number(w.price);
+        crownJewel = w;
+      }
+    });
+    if (crownJewel) {
+      document.getElementById('profileCrownJewel').textContent = `${crownJewel.name} ($${Number(crownJewel.price).toLocaleString()})`;
+    } else {
+      document.getElementById('profileCrownJewel').textContent = '—';
+    }
+
+    // Oldest vintage
+    if (cellar.length > 0) {
+      const vintages = cellar.map(w => Number(w.vintage)).filter(v => !isNaN(v) && v > 0);
+      if (vintages.length > 0) {
+        const oldestV = Math.min(...vintages);
+        const age = new Date().getFullYear() - oldestV;
+        document.getElementById('profileOldestVintage').textContent = `${oldestV} Vintage (${age} Years Old)`;
+      }
+    }
+
+    // Bottles enjoyed
+    document.getElementById('profileBottlesUncorked').textContent = `${bottlesConsumedCount} bottles enjoyed`;
+
+    // Populate edit form
+    document.getElementById('editProfileName').value = user.username || 'Luke R';
+    document.getElementById('editProfileEmail').value = user.email || 'lukeroch38@example.com';
+    document.getElementById('profileEditBox').classList.remove('show');
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function saveProfileChanges() {
+    const newName = document.getElementById('editProfileName').value.trim() || 'Luke R';
+    const newEmail = document.getElementById('editProfileEmail').value.trim() || 'lukeroch38@example.com';
+
+    let user = { memberSince: '2024-10-15' };
+    try {
+      const savedUser = localStorage.getItem('vino_user');
+      if (savedUser) user = JSON.parse(savedUser);
+    } catch(e) {}
+
+    user.username = newName;
+    user.email = newEmail;
+    if (!user.memberSince) user.memberSince = '2024-10-15';
+
+    localStorage.setItem('vino_user', JSON.stringify(user));
+
+    // Update hero card in real time
+    document.getElementById('heroUserName').textContent = newName;
+    document.getElementById('heroUserEmail').textContent = newEmail;
+
+    const parts = newName.split(/\s+/);
+    let initials = 'LR';
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else if (parts.length === 1 && parts[0].length >= 1) {
+      initials = parts[0].substring(0, 2).toUpperCase();
+    }
+    document.getElementById('heroAvatar').textContent = initials;
+    document.getElementById('profileModalAvatar').textContent = initials;
+    document.getElementById('profileModalName').textContent = newName;
+    document.getElementById('profileModalEmail').textContent = newEmail;
+
+    document.getElementById('profileEditBox').classList.remove('show');
+    showToast('✓ Profile updated successfully');
   }
 
   // ----------------------------------------------------
@@ -1629,9 +2386,13 @@
     if (newQty < 0) newQty = 0;
     wine.quantity = newQty;
 
+    if (delta < 0) {
+      bottlesConsumedCount++;
+    }
+
     saveCellar();
     updateStats();
-    renderGrid();
+    renderMain();
 
     // Update modal in place
     openOverview(activeWineId);
@@ -1654,7 +2415,8 @@
       cellar = cellar.filter(w => w.id !== activeWineId);
       saveCellar();
       updateStats();
-      renderGrid();
+      updateRegionFilterChips();
+      renderMain();
       closeOverview();
       showToast(`Removed "${wine.name}" from cellar`);
     }
@@ -1716,7 +2478,8 @@
     cellar.unshift(newWine);
     saveCellar();
     updateStats();
-    renderGrid();
+    updateRegionFilterChips();
+    renderMain();
     closeAddWineModal();
 
     showToast(`✓ Added "${newWine.name}" to your cellar!`);
@@ -1748,6 +2511,7 @@
   function clearAllFilters() {
     activeTypeFilter = 'All';
     activePairFilter = 'All';
+    activeRegionFilter = 'All';
     searchQuery = '';
     document.getElementById('searchInput').value = '';
 
@@ -1761,7 +2525,8 @@
       c.classList.remove('active');
     });
 
-    renderGrid();
+    updateRegionFilterChips();
+    renderMain();
   }
 
   function setupFilters() {
@@ -1769,7 +2534,7 @@
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', (e) => {
       searchQuery = e.target.value;
-      renderGrid();
+      renderMain();
     });
 
     // Wine Type Chips
@@ -1779,7 +2544,7 @@
         const type = chip.getAttribute('data-type');
         activeTypeFilter = type;
         chip.classList.add(type === 'All' ? 'gold-active' : 'active');
-        renderGrid();
+        renderMain();
       });
     });
 
@@ -1790,7 +2555,7 @@
         const pair = chip.getAttribute('data-pair');
         activePairFilter = pair;
         chip.classList.add('gold-active');
-        renderGrid();
+        renderMain();
       });
     });
 
@@ -1801,6 +2566,9 @@
       });
     });
 
+    // Region View Toggle Button
+    document.getElementById('toggleRegionViewBtn').addEventListener('click', toggleRegionView);
+
     // Reset Demo button
     document.getElementById('resetDemoBtn').addEventListener('click', () => {
       if (confirm('Reset cellar to original 7 default wines ($3,867 / 16 bottles)?')) {
@@ -1808,7 +2576,8 @@
         saveCellar();
         clearAllFilters();
         updateStats();
-        renderGrid();
+        updateRegionFilterChips();
+        renderMain();
         showToast('Restored default cellar collection');
       }
     });
@@ -1821,7 +2590,7 @@
   }
 
   // ----------------------------------------------------
-  // EVENT LISTENERS & INITIALIZATION
+  // INITIAL USER PROFILE SETUP & CLICK HANDLERS
   // ----------------------------------------------------
   function escapeHtml(str) {
     if (!str) return '';
@@ -1837,7 +2606,20 @@
     loadCellar();
     updateStats();
     setupFilters();
-    renderGrid();
+    updateRegionFilterChips();
+    renderMain();
+
+    // Wire User Profile Button (Right-hand hero card)
+    document.getElementById('userCardBtn').addEventListener('click', openProfileModal);
+    document.getElementById('closeProfileBtn').addEventListener('click', closeProfileModal);
+    document.getElementById('closeProfileDoneBtn').addEventListener('click', closeProfileModal);
+    document.getElementById('toggleEditProfileBtn').addEventListener('click', () => {
+      document.getElementById('profileEditBox').classList.toggle('show');
+    });
+    document.getElementById('cancelEditProfileBtn').addEventListener('click', () => {
+      document.getElementById('profileEditBox').classList.remove('show');
+    });
+    document.getElementById('saveProfileBtn').addEventListener('click', saveProfileChanges);
 
     // Wire Add Wine Buttons
     document.getElementById('openAddWineBtnTop').addEventListener('click', openAddWineModal);
@@ -1861,24 +2643,28 @@
     document.getElementById('addWineModal').addEventListener('click', (e) => {
       if (e.target.id === 'addWineModal') closeAddWineModal();
     });
+    document.getElementById('profileModal').addEventListener('click', (e) => {
+      if (e.target.id === 'profileModal') closeProfileModal();
+    });
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeOverview();
         closeAddWineModal();
+        closeProfileModal();
       }
     });
 
-    // Load user session if logged in
+    // Load initial user session
     (function initUserSession() {
       try {
         const savedUser = localStorage.getItem('vino_user');
         if (savedUser) {
           const user = JSON.parse(savedUser);
-          const nameEl = document.querySelector('.user-name');
-          const emailEl = document.querySelector('.user-email');
-          const avatarEl = document.querySelector('.avatar');
+          const nameEl = document.getElementById('heroUserName');
+          const emailEl = document.getElementById('heroUserEmail');
+          const avatarEl = document.getElementById('heroAvatar');
 
           if (user.username && nameEl) {
             nameEl.textContent = user.username;
