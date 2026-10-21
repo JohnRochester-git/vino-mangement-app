@@ -4,7 +4,23 @@ The Python backend for the Wine Cellar app, built with Flask. Right now it's a s
 
 ## Set it up (first time only)
 
-From the `backend/` folder:
+From the `backend/` folder.
+
+**Windows (PowerShell):**
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+If PowerShell says running scripts is disabled, run this once, then try again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+**Mac or Linux:**
 
 ```bash
 python3 -m venv .venv
@@ -12,17 +28,19 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The `.venv` folder is a private Python install for this project, so packages don't mix with the rest of your computer. Run `source .venv/bin/activate` again each time you open a new terminal.
+The `.venv` folder is a private Python install for this project, so packages don't mix with the rest of your computer. Turn it on again (the second line above) each time you open a new terminal. You'll see `(.venv)` at the start of the prompt when it's on.
 
 ## Run it
 
-Development server, which reloads easily and shows detailed errors:
+On any computer, start the development server:
 
 ```bash
 python app.py
 ```
 
-Production server, which is how it will run once it's deployed:
+This is what you'll use day to day.
+
+The live app runs under a production server called gunicorn instead. Gunicorn doesn't work on Windows, so on Windows you don't need it. Once the app is packaged in a container (coming in the next sprint), you'll be able to run the production setup on any computer. On Mac or Linux you can run it now:
 
 ```bash
 gunicorn --bind 0.0.0.0:8000 app:app
@@ -30,13 +48,15 @@ gunicorn --bind 0.0.0.0:8000 app:app
 
 ## Check that it's running
 
-Open http://localhost:8000/health in a browser, or run:
+Open http://localhost:8000/health in a browser. You should see `OK`.
 
-```bash
-curl http://localhost:8000/health
+Or from a terminal:
+
+```powershell
+curl.exe http://localhost:8000/health
 ```
 
-You should see `OK`.
+On Mac or Linux, use `curl` without the `.exe`.
 
 ## Settings
 
