@@ -1,0 +1,313 @@
+/* ==========================================================================
+   Vino — Shared Design Tokens & Global Styles (theme.css)
+   ========================================================================== */
+
+:root {
+  /* Color Palette */
+  --bg: #150A0C;
+  --surface: #221013;
+  --surface-2: #2B1417;
+  --surface-elevated: #32161B;
+  --card-img-start: #3A1418;
+  --card-img-end: #170A0B;
+  --wine: #7A1A2E;
+  --wine-deep: #4A0E1C;
+  --wine-glow: rgba(122, 26, 46, 0.4);
+  --gold: #C9A15B;
+  --gold-hover: #D8B473;
+  --gold-dim: #8C7440;
+  --gold-glow: rgba(201, 161, 91, 0.25);
+  --text: #F2E9E4;
+  --text-muted: #A88E88;
+  --hairline: #3A2226;
+  --hairline-gold: rgba(201, 161, 91, 0.25);
+  --danger: #D64545;
+  --error: #E55353;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+.wordmark {
+  font-family: 'Fraunces', serif;
+}
+
+/* --------------------------------------------------------------------------
+   Ambient Background Glows & Watermarks
+   -------------------------------------------------------------------------- */
+.bg-glow-1 {
+  position: fixed;
+  top: -140px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  height: 520px;
+  background: radial-gradient(circle, var(--wine-glow) 0%, rgba(21, 10, 12, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow-2 {
+  position: fixed;
+  bottom: -180px;
+  right: 8%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(74, 14, 28, 0.3) 0%, rgba(21, 10, 12, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow-3 {
+  position: fixed;
+  top: 30%;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(201, 161, 91, 0.06) 0%, rgba(21, 10, 12, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow-cellar {
+  position: fixed;
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 480px;
+  background: radial-gradient(circle, var(--wine-glow) 0%, rgba(21, 10, 12, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-ornament {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Common Logo Badge
+   -------------------------------------------------------------------------- */
+.logo-badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(150deg, #8E2036 0%, var(--wine) 50%, var(--wine-deep) 100%);
+  border: 1px solid var(--hairline-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 24px var(--wine-glow);
+  margin-bottom: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.logo-badge:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 30px rgba(201, 161, 91, 0.25);
+}
+
+.logo-badge svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* --------------------------------------------------------------------------
+   Common Button Styles
+   -------------------------------------------------------------------------- */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold);
+  border: 1px solid transparent;
+  color: #241318;
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(201, 161, 91, 0.2);
+  text-decoration: none;
+}
+
+.btn-gold:hover {
+  background: var(--gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201, 161, 91, 0.3);
+}
+
+.btn-gold:active {
+  transform: translateY(0);
+}
+
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-ghost:hover {
+  border-color: var(--gold-dim);
+  background: rgba(201, 161, 91, 0.08);
+  color: #fff;
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  color: #E88383;
+  padding: 9px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-danger-ghost:hover {
+  background: rgba(214, 69, 69, 0.15);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Chips & Filter Pills
+   -------------------------------------------------------------------------- */
+.chip {
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.chip:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+
+.chip.active {
+  background: var(--wine);
+  border-color: var(--wine);
+  color: var(--text);
+}
+
+.chip.gold-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #241318;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Toast Notifications
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface-2);
+  border: 1px solid var(--gold);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast-icon {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Common Keyframe Animations
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
