@@ -74,7 +74,11 @@ The test always stops the app when it finishes, even if you started it yourself 
 
 ### What this runs
 
-Only the backend. The frontend pages (`login.html` and the others) don't talk to the backend yet, so open them straight from the files in your browser.
+Only the backend: the API at http://localhost:8000/api/v1, with a local database that sets itself up on first start. The database is kept in a Docker volume called `vino-data`, so your data survives `stop.py` and restarts. Every endpoint is described in [docs/api.md](docs/api.md).
+
+The frontend pages (`login.html` and the others) don't talk to the backend yet, so open them straight from the files in your browser. When they're connected, serve them from port 5500 (for example, `python -m http.server 5500` from the main folder); the backend accepts requests from there.
+
+To load demo data, or to start the database over, see [backend/README.md](backend/README.md#the-database).
 
 ### If something goes wrong
 

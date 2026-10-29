@@ -1,0 +1,5 @@
+# Local SQLite databases and test caches
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
