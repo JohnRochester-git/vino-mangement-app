@@ -40,7 +40,7 @@ python app.py
 
 This is what you'll use day to day.
 
-The live app runs under a production server called gunicorn instead. Gunicorn doesn't work on Windows, so on Windows you don't need it. Once the app is packaged in a container (coming in the next sprint), you'll be able to run the production setup on any computer. On Mac or Linux you can run it now:
+The live app runs under a production server called gunicorn instead. Gunicorn doesn't work on Windows, but you don't need to install it anywhere: the Docker setup runs the app under gunicorn on any computer. See [Run it locally](../README.md#run-it-locally) in the main README. On Mac or Linux you can also run gunicorn directly:
 
 ```bash
 gunicorn --bind 0.0.0.0:8000 app:app
