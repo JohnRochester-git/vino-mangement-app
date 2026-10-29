@@ -15,12 +15,13 @@ log = logging.getLogger(__name__)
 
 
 class APIError(Exception):
-    def __init__(self, status, code, message, fields=None):
+    def __init__(self, status, code, message, fields=None, extra=None):
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
         self.fields = fields
+        self.extra = extra
 
 
 class ValidationError(APIError):
@@ -43,10 +44,12 @@ class Forbidden(APIError):
         super().__init__(403, "forbidden", message)
 
 
-def error_response(status, code, message, fields=None):
+def error_response(status, code, message, fields=None, extra=None):
     body = {"code": code, "message": message}
     if fields:
         body["fields"] = fields
+    if extra:
+        body.update(extra)
     return jsonify({"error": body}), status
 
 
@@ -65,7 +68,7 @@ _HTTP_CODES = {
 def register_error_handlers(app):
     @app.errorhandler(APIError)
     def handle_api_error(err):
-        return error_response(err.status, err.code, err.message, err.fields)
+        return error_response(err.status, err.code, err.message, err.fields, err.extra)
 
     @app.errorhandler(HTTPException)
     def handle_http_error(err):

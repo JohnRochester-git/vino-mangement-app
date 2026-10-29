@@ -11,6 +11,8 @@ This is the reference for the backend API: every endpoint, what to send, what co
 - [Drinking and the journal](#drinking-and-the-journal)
 - [Value](#value)
 - [Insights and reference data](#insights-and-reference-data)
+- [CSV export and import](#csv-export-and-import)
+- [Wishlist](#wishlist)
 - [Replacing localStorage](#replacing-localstorage)
 
 ## The basics
@@ -19,7 +21,7 @@ This is the reference for the backend API: every endpoint, what to send, what co
 
 **Logging in uses a cookie.** Signing up or logging in sets a cookie named `vino_session`. The browser sends it back by itself. JavaScript can't read it (it's `HttpOnly`), which protects it from theft. A login lasts 14 days unless you log out.
 
-**Always send JSON.** Every request that changes something (`POST`, `PATCH`, `DELETE`) must have the header `Content-Type: application/json`, even if it has no body (logout, deletes). Anything else gets `415`. This blocks other websites from sending forged requests.
+**Always send JSON.** Every request that changes something (`POST`, `PATCH`, `DELETE`) must have the header `Content-Type: application/json`, even if it has no body (logout, deletes). Anything else gets `415`. This blocks other websites from sending forged requests. The one exception is [CSV import](#post-collectionsidimport), which sends a file.
 
 **Local development from a different port.** If the pages are served from `http://localhost:5500` (for example with `python -m http.server 5500`) while the API runs on port 8000, add `credentials: "include"` to every `fetch`, or the cookie won't be sent. Ports 5500 on `localhost` and `127.0.0.1` are allowed by default. Others go in the `ALLOWED_ORIGINS` setting.
 
@@ -93,6 +95,8 @@ Every error has the same shape:
 | 429 | `too_many_attempts` | Login locked for 5 minutes after 5 failures. |
 | 500 | `internal_error` | A bug. The details are logged on the server, never sent to the browser. |
 | 503 | `service_unavailable` | The database couldn't be reached. Ask the user to try again shortly. |
+
+400 `import_errors` is the CSV import's error. It lists problems by row instead of `fields`; see [CSV import](#post-collectionsidimport).
 
 409 codes: `email_taken`, `already_member`, `owner_cannot_leave`, `barcode_exists`, `wine_not_editable`, `wine_in_use`, `not_enough_bottles`, `conflict`.
 
@@ -623,6 +627,106 @@ Bottles that are ready to drink (`drinkSoon` first, then `ready`) and pair with 
 ### GET /health
 
 Not under `/api/v1`. Returns the plain text `OK`. Used by Docker and monitoring.
+
+## CSV export and import
+
+For moving a cellar in from a spreadsheet (Eric) or a notebook typed up (Frank), and for backups.
+
+The columns, in this order:
+
+| Column | Meaning |
+| --- | --- |
+| `wineName` | Required. |
+| `wineProducer`, `wineRegion` | Optional text. |
+| `wineType` | Required. Red, White, Rosé, Sparkling, Dessert, Fortified, Orange. |
+| `wineVint` | Year, or empty for non-vintage. |
+| `blendStyle` | A name from [GET /blends](#get-blends), like `Nebbiolo`. |
+| `wineBarcode` | If a wine with this barcode is already in the catalog, the row uses it, and the row's other wine columns are ignored. |
+| `wineValue` | Catalog value per bottle, in dollars. |
+| `pairings` | Names from [GET /pairings](#get-pairings), separated with `;`, like `Beef; Lamb`. |
+| `itemQuantity` | Required. 1 to 9,999. |
+| `itemStoredAt` | Storage location. |
+| `itemAquiredDate` | `YYYY-MM-DD`. |
+| `itemPurchasePrice` | Dollars, per bottle. |
+| `itemValue` | The household's own value per bottle, in dollars. |
+| `itemDrinkFrom`, `itemDrinkBy` | `YYYY-MM-DD`. Left empty, the window is estimated. |
+| `wineDescription` | Tasting notes. |
+
+### GET /collections/{id}/export.csv
+
+Downloads the bottles still in the cellar as a CSV file with the columns above. Money columns are in dollars, like `1150.00`. A cell that starts with `=`, `+`, `-` or `@` gets a `'` in front, so spreadsheet apps don't run it as a formula. Link to it directly, for example `<a href="/api/v1/collections/1/export.csv">Download CSV</a>`; the login cookie goes along.
+
+### POST /collections/{id}/import
+
+Send the CSV file either as the request body with `Content-Type: text/csv`, or as a form upload (`multipart/form-data`) in a field named `file`:
+
+```js
+const form = new FormData();
+form.append("file", fileInput.files[0]);
+const resp = await fetch(API + "/collections/1/import", { method: "POST", credentials: "include", body: form });
+```
+
+Only the `wineName`, `wineType` and `itemQuantity` columns are required. Columns can be in any order. Save the file as "CSV UTF-8" so accented names like Rosé survive. At most 200 rows per file.
+
+`201`: `{"imported": 2, "bottles": 3}`.
+
+**Every row is checked before anything is saved.** If any row has a problem, nothing is imported, and every problem is listed by row number (row 1 is the header):
+
+```json
+{
+  "error": {
+    "code": "import_errors",
+    "message": "1 row(s) need fixing. Nothing was imported.",
+    "rows": [
+      {"row": 3, "fields": {"wineType": "Wine type must be one of: Red, White, Rosé, Sparkling, Dessert, Fortified, Orange.",
+                            "itemQuantity": "Quantity must be between 1 and 9,999."}}
+    ]
+  }
+}
+```
+
+Other errors: `400 validation_error` with `fields.file` (bad header row, empty file, too many rows, not UTF-8), `404`, `415` (not CSV or a form upload).
+
+## Wishlist
+
+Wines a household wants to remember. It's a list only: no prices, shops, or links to buy. Shared by everyone in the collection.
+
+A wishlist entry:
+
+```json
+{
+  "wishID": 1,
+  "collectionId": 1,
+  "wineID": null,
+  "wishName": "Opus One",
+  "wishProducer": null,
+  "wishVint": 2019,
+  "wishNotes": "Try for 50th birthday",
+  "wishAddedByUserID": 1,
+  "wishAddedByName": "Frank Delgado",
+  "wishAddedAt": "2026-10-29T21:30:00Z"
+}
+```
+
+### GET /collections/{id}/wishlist
+
+`{"wishlist": [ ...entries, newest first... ]}`.
+
+### POST /collections/{id}/wishlist
+
+```json
+{"wishName": "Opus One", "wishVint": 2019, "wishNotes": "Try for 50th birthday"}
+```
+
+Or link a catalog wine with `{"wineId": 1}`, and its name, producer and vintage are filled in. Fields: `wineId`, `wishName` (1 to 120 characters, required unless `wineId` is sent), `wishProducer`, `wishVint`, `wishNotes`. `201`: the entry.
+
+### PATCH /wishlist/{id}
+
+Any of the same fields. `200`: the entry. `404` if it isn't in one of your collections.
+
+### DELETE /wishlist/{id}
+
+`200`: `{"deleted": true}`.
 
 ## Replacing localStorage
 

@@ -103,6 +103,12 @@ No column changes. The `blendStyle` and `pairingName` values are unique, and sta
 
 **Reason:** slows down password guessing. After 5 failed logins for one email within 15 minutes, that email is locked for 5 minutes. Rows older than one day are deleted at each login.
 
+## New: `wishlist_item` (migration 0003)
+
+`(wishID, collectionId, wineID, wishName, wishProducer, wishVint, wishNotes, wishAddedByUserID, wishAddedAt)`. `wineID` is optional: an entry can point at a catalog wine or just be a name.
+
+**Reason:** a nice-to-have feature, a list of wines the household wants to remember. It has no price or shop fields, since Vino doesn't sell. It belongs to a collection, so the whole household shares it. It's in its own migration file so it can be dropped without touching the core schema.
+
 ## Not in the ERD, created by tooling: `d1_migrations`
 
 Records which migration files have run. Wrangler creates and uses it on Cloudflare D1. The local migration command (`python -m vino.migrate`) uses the same table, so local and cloud databases stay in step. It isn't part of the data model.
