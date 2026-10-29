@@ -88,3 +88,18 @@ def eric(make_client):
     c.user = data["user"]
     c.collection_id = data["collections"][0]["collectionId"]
     return c
+
+
+MARGAUX = {
+    "wineName": "Château Margaux", "wineType": "Red", "wineVint": 2010,
+    "wineRegion": "Margaux, Bordeaux, France", "wineValue": 1150, "pairings": ["Beef", "Lamb"],
+}
+
+
+def add_item(client, collection_id=None, wine=None, **fields):
+    body = {"itemQuantity": 2, **fields}
+    if "wineId" not in body:
+        body["wine"] = wine or dict(MARGAUX)
+    resp = client.post(f"/api/v1/collections/{collection_id or client.collection_id}/items", json=body)
+    assert resp.status_code == 201, resp.get_json()
+    return resp.get_json()
