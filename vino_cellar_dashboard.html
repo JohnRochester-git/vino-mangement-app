@@ -74,10 +74,10 @@
         <!-- Clickable User Profile Card on the right-hand side -->
         <div class="user-card" id="userCardBtn" role="button" tabindex="0"
           title="Click to view your profile and cellar history">
-          <div class="avatar" id="heroAvatar">LR</div>
+          <div class="avatar" id="heroAvatar">—</div>
           <div>
-            <div class="user-name" id="heroUserName">Luke R</div>
-            <div class="user-email" id="heroUserEmail">lukeroch38@example.com</div>
+            <div class="user-name" id="heroUserName">Loading…</div>
+            <div class="user-email" id="heroUserEmail"></div>
           </div>
           <div class="user-card-hint">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -98,7 +98,7 @@
         </div>
         <div>
           <div class="stat-label">DISTINCT WINES</div>
-          <div class="stat-value" id="statDistinct">7</div>
+          <div class="stat-value" id="statDistinct">—</div>
         </div>
       </div>
       <div class="stat-card">
@@ -110,7 +110,7 @@
         </div>
         <div>
           <div class="stat-label">TOTAL BOTTLES</div>
-          <div class="stat-value" id="statBottles">16</div>
+          <div class="stat-value" id="statBottles">—</div>
         </div>
       </div>
       <div class="stat-card">
@@ -122,7 +122,7 @@
         </div>
         <div>
           <div class="stat-label">COLLECTION VALUE</div>
-          <div class="stat-value" id="statValue">$3,867</div>
+          <div class="stat-value" id="statValue">—</div>
         </div>
       </div>
       <div class="stat-card">
@@ -133,7 +133,7 @@
         </div>
         <div>
           <div class="stat-label">OLDEST VINTAGE</div>
-          <div class="stat-value" id="statOldest">2010</div>
+          <div class="stat-value" id="statOldest">—</div>
         </div>
       </div>
     </div>
@@ -203,17 +203,7 @@
               <div class="filter-section-title">Pair With</div>
               <div class="filter-chip-grid" id="pairChipRow">
                 <button type="button" class="chip gold-active" data-pair="All">All</button>
-                <button type="button" class="chip" data-pair="Beef">Beef</button>
-                <button type="button" class="chip" data-pair="Charcuterie">Charcuterie</button>
-                <button type="button" class="chip" data-pair="Cheese">Cheese</button>
-                <button type="button" class="chip" data-pair="Chocolate">Chocolate</button>
-                <button type="button" class="chip" data-pair="Dessert">Dessert</button>
-                <button type="button" class="chip" data-pair="Lamb">Lamb</button>
-                <button type="button" class="chip" data-pair="Pasta">Pasta</button>
-                <button type="button" class="chip" data-pair="Poultry">Poultry</button>
-                <button type="button" class="chip" data-pair="Salad">Salad</button>
-                <button type="button" class="chip" data-pair="Seafood">Seafood</button>
-                <button type="button" class="chip" data-pair="Spicy">Spicy</button>
+                <!-- Built from GET /pairings -->
               </div>
             </div>
           </div>
@@ -222,7 +212,7 @@
     </div>
 
     <div class="grid-header">
-      <div class="grid-count" id="gridCountDisplay">Showing <strong>7</strong> wines</div>
+      <div class="grid-count" id="gridCountDisplay">Loading your cellar…</div>
       <div class="view-mode-indicator" id="viewModeIndicator">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7" />
@@ -265,10 +255,10 @@
       <div class="modal-body">
         <!-- Profile Header Hero -->
         <div class="profile-hero">
-          <div class="profile-avatar-large" id="profileModalAvatar">LR</div>
+          <div class="profile-avatar-large" id="profileModalAvatar">—</div>
           <div class="profile-identity">
-            <h2 id="profileModalName">Luke R</h2>
-            <div class="profile-email" id="profileModalEmail">lukeroch38@example.com</div>
+            <h2 id="profileModalName"></h2>
+            <div class="profile-email" id="profileModalEmail"></div>
             <div class="sommelier-tier-badge">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon
@@ -381,7 +371,8 @@
           Sign Out
         </a>
         <div class="modal-footer-right">
-          <button class="btn-ghost" id="toggleEditProfileBtn">
+          <!-- Hidden until the API can change a name or email -->
+          <button class="btn-ghost" id="toggleEditProfileBtn" style="display:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -559,7 +550,8 @@
         <div class="form-row">
           <div class="form-group flex-1">
             <label for="inputVarietal">Grape / Varietal</label>
-            <input type="text" id="inputVarietal" class="form-input" placeholder="e.g. Cabernet Sauvignon, Pinot Noir">
+            <input type="text" id="inputVarietal" class="form-input" placeholder="e.g. Cabernet Sauvignon, Pinot Noir" list="blendOptions" autocomplete="off">
+            <datalist id="blendOptions"></datalist>
           </div>
           <div class="form-group flex-1">
             <label for="inputRegion">Region & Country <span class="req">*</span></label>
@@ -570,11 +562,11 @@
         <div class="form-row">
           <div class="form-group flex-1">
             <label for="inputVintage">Vintage Year <span class="req">*</span></label>
-            <input type="number" id="inputVintage" class="form-input" min="1900" max="2030" value="2020" required>
+            <input type="number" id="inputVintage" class="form-input" value="2020" placeholder="Blank for NV">
           </div>
           <div class="form-group flex-1">
             <label for="inputPrice">Worth per Bottle ($ USD) <span class="req">*</span></label>
-            <input type="number" id="inputPrice" class="form-input" min="0" step="1" placeholder="e.g. 150" required>
+            <input type="number" id="inputPrice" class="form-input" min="0" step="0.01" placeholder="e.g. 150">
           </div>
           <div class="form-group flex-1">
             <label for="inputQty">Number of Bottles <span class="req">*</span></label>
@@ -585,25 +577,16 @@
         <div class="form-group">
           <label>Food Pairings (Click to toggle)</label>
           <div class="interactive-chips" id="formPairChips">
-            <span class="select-chip" data-val="Beef">Beef</span>
-            <span class="select-chip" data-val="Charcuterie">Charcuterie</span>
-            <span class="select-chip" data-val="Cheese">Cheese</span>
-            <span class="select-chip" data-val="Chocolate">Chocolate</span>
-            <span class="select-chip" data-val="Dessert">Dessert</span>
-            <span class="select-chip" data-val="Lamb">Lamb</span>
-            <span class="select-chip" data-val="Pasta">Pasta</span>
-            <span class="select-chip" data-val="Poultry">Poultry</span>
-            <span class="select-chip" data-val="Salad">Salad</span>
-            <span class="select-chip" data-val="Seafood">Seafood</span>
-            <span class="select-chip" data-val="Spicy">Spicy</span>
+            <!-- Built from GET /pairings -->
           </div>
         </div>
 
         <div class="form-group">
           <label for="inputMaturity">Maturity / Drinking Window</label>
           <select id="inputMaturity" class="form-select">
+            <option value="Estimate" selected>Estimate for me</option>
             <option value="Ready to Enjoy">Ready to Enjoy</option>
-            <option value="Peak Maturity" selected>Peak Maturity</option>
+            <option value="Peak Maturity">Peak Maturity</option>
             <option value="Aging Gracefully">Aging Gracefully</option>
             <option value="Cellar Candidate">Cellar Candidate (Keep Aging)</option>
           </select>
@@ -633,6 +616,7 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Shared Storage & Data Services -->
+  <script src="js/api.js"></script>
   <script src="js/storage.js"></script>
   <!-- Cellar Dashboard Controller -->
   <script src="js/dashboard.js"></script>
