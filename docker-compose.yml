@@ -1,0 +1,13 @@
+services:
+  backend:
+    build: ./backend
+    image: vino-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: backend/.env
+        required: false
+    healthcheck:
+      interval: 5s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+    restart: unless-stopped
