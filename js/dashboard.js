@@ -795,6 +795,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelAddWineBtn = document.getElementById('cancelAddWineBtn');
   if (cancelAddWineBtn) cancelAddWineBtn.addEventListener('click', closeAddWineModal);
 
+  const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
+  if (scanBarcodeBtn) {
+    scanBarcodeBtn.addEventListener('click', () => {
+      showToast('Barcode scanner coming soon');
+    });
+  }
+
   const addWineForm = document.getElementById('addWineForm');
   if (addWineForm) addWineForm.addEventListener('submit', handleAddWineSubmit);
 
