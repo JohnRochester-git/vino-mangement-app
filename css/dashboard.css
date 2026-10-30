@@ -84,7 +84,37 @@
 .hero-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-recommend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(201, 161, 91, 0.12);
+  border: 1px solid var(--hairline-gold);
+  color: var(--gold);
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.btn-recommend:hover {
+  background: rgba(201, 161, 91, 0.22);
+  border-color: var(--gold);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(201, 161, 91, 0.25);
+}
+
+.btn-recommend:active {
+  transform: translateY(0);
 }
 
 /* Interactive User Card */
@@ -1239,6 +1269,108 @@
 
 .profile-edit-box.show {
   display: block;
+}
+
+/* ---------- RECOMMEND A WINE MODAL STYLES ---------- */
+.rec-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(201, 161, 91, 0.15);
+  border: 1px solid var(--hairline-gold);
+  color: var(--gold);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.rec-wine-card {
+  display: flex;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--hairline-gold);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.rec-wine-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(140deg, rgba(122, 26, 46, 0.4), rgba(42, 19, 23, 0.8));
+  border: 1px solid rgba(201, 161, 91, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rec-wine-info h3 {
+  font-size: 19px;
+  font-weight: 500;
+  margin: 0;
+  color: #fff;
+}
+
+.rec-wine-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.rec-wine-price {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.rec-rationale-box {
+  background: rgba(122, 26, 46, 0.16);
+  border-left: 3px solid var(--gold);
+  padding: 14px 16px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 16px;
+}
+
+.rec-rationale-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-rationale-text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #E2D3D0;
+  margin: 0;
+}
+
+.rec-alternative-card {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 /* Responsive */
