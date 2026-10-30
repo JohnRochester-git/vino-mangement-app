@@ -64,6 +64,12 @@
           profile on the right.</div>
       </div>
       <div class="hero-right">
+        <button class="btn-recommend" id="openRecommendWineBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+          </svg>
+          Recommend a Wine
+        </button>
         <button class="btn-gold" id="openAddWineBtnHero">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5">
             <path d="M12 5v14M5 12h14" />
@@ -515,6 +521,97 @@
             Uncork 1 Bottle
           </button>
           <button class="btn-gold" id="doneOverviewBtn">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- RECOMMEND A WINE MODAL                         -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="recommendWineModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="recommendModalTitle">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="recommendModalTitle">Recommend a Wine</h2>
+          <div class="modal-subtitle">Pair your meal & occasion with the ideal bottle from your cellar</div>
+        </div>
+        <button class="modal-close-btn" id="closeRecommendWineBtn" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 20px;">
+        <!-- STEP 1: INPUT FORM VIEW -->
+        <div id="recommendFormView">
+          <div class="form-group">
+            <label for="recMealInput">Describe Your Meal / Dish</label>
+            <input type="text" id="recMealInput" class="form-input"
+              placeholder="e.g. Pan-seared ribeye with rosemary butter, or roast chicken with herbs...">
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label>Food Category (Select what you're eating)</label>
+            <div class="interactive-chips" id="recFoodChips">
+              <span class="select-chip" data-val="Beef">Beef</span>
+              <span class="select-chip" data-val="Poultry">Poultry</span>
+              <span class="select-chip" data-val="Seafood">Seafood</span>
+              <span class="select-chip" data-val="Pasta">Pasta</span>
+              <span class="select-chip" data-val="Lamb">Lamb</span>
+              <span class="select-chip" data-val="Cheese">Cheese</span>
+              <span class="select-chip" data-val="Charcuterie">Charcuterie</span>
+              <span class="select-chip" data-val="Salad">Salad</span>
+              <span class="select-chip" data-val="Dessert">Dessert</span>
+              <span class="select-chip" data-val="Chocolate">Chocolate</span>
+              <span class="select-chip" data-val="Spicy">Spicy</span>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 18px;">
+            <label>Occasion / Atmosphere</label>
+            <div class="interactive-chips" id="recOccasionChips">
+              <span class="select-chip selected" data-val="Casual Dinner">Casual Dinner</span>
+              <span class="select-chip" data-val="Romantic Date Night">Romantic Date Night</span>
+              <span class="select-chip" data-val="Celebration">Celebration / Milestone</span>
+              <span class="select-chip" data-val="Dinner Party">Dinner Party with Friends</span>
+              <span class="select-chip" data-val="Quiet Evening">Quiet Evening / Unwinding</span>
+            </div>
+          </div>
+
+          <div class="modal-footer"
+            style="padding: 18px 0 0; margin-top: 20px; background: transparent; border-top: 1px solid var(--hairline);">
+            <button type="button" class="btn-ghost" id="cancelRecommendBtn">Cancel</button>
+            <button type="button" class="btn-gold" id="submitRecommendBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+              </svg>
+              Recommend a Wine
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: RECOMMENDATION RESULT VIEW -->
+        <div id="recommendResultView" style="display: none;">
+          <div id="recommendResultContent">
+            <!-- Injected dynamically -->
+          </div>
+
+          <div class="modal-footer"
+            style="padding: 18px 0 0; margin-top: 20px; background: transparent; border-top: 1px solid var(--hairline);">
+            <button type="button" class="btn-ghost" id="recTryAnotherBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+              </svg>
+              Change Meal / Search
+            </button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-ghost" id="recViewDetailsBtn">View Wine Overview</button>
+              <button type="button" class="btn-gold" id="recDoneBtn">Done</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
