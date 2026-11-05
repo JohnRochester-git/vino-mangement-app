@@ -64,30 +64,65 @@
           profile on the right.</div>
       </div>
       <div class="hero-right">
-        <button class="btn-recommend" id="openRecommendWineBtn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
-          </svg>
-          Recommend a Wine
-        </button>
-        <button class="btn-ghost" id="openScanBtnHero">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-            <path d="M7 8v8" />
-            <path d="M12 8v8" />
-            <path d="M17 8v8" />
-          </svg>
-          Scan Barcode
-        </button>
-        <button class="btn-gold" id="openAddWineBtnHero">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Add Wine
-        </button>
+        <!-- Unified Cellar Actions Dropdown -->
+        <div class="action-dropdown-wrapper" id="actionDropdownWrapper">
+          <button class="action-dropdown-btn" id="actionDropdownBtn" type="button" aria-expanded="false" aria-haspopup="true" title="Cellar Actions: Add, Recommend, or Scan">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span>Cellar Actions</span>
+            <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          <div class="action-dropdown-menu" id="actionDropdownMenu" role="menu">
+            <!-- 1. Add Wine -->
+            <button class="action-dropdown-item" id="openAddWineBtnHero" type="button" role="menuitem">
+              <div class="action-dropdown-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </div>
+              <div class="action-dropdown-text">
+                <span class="action-dropdown-title">Add Wine</span>
+                <span class="action-dropdown-sub">Log a bottle with vintage, notes & price</span>
+              </div>
+            </button>
+
+            <!-- 2. Recommend a Wine -->
+            <button class="action-dropdown-item" id="openRecommendWineBtn" type="button" role="menuitem">
+              <div class="action-dropdown-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+                </svg>
+              </div>
+              <div class="action-dropdown-text">
+                <span class="action-dropdown-title">Recommend a Wine</span>
+                <span class="action-dropdown-sub">Pair your meal & occasion from your cellar</span>
+              </div>
+            </button>
+
+            <!-- 3. Scan Barcode -->
+            <button class="action-dropdown-item" id="openScanBtnHero" type="button" role="menuitem">
+              <div class="action-dropdown-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  <path d="M7 8v8" />
+                  <path d="M12 8v8" />
+                  <path d="M17 8v8" />
+                </svg>
+              </div>
+              <div class="action-dropdown-text">
+                <span class="action-dropdown-title">Scan Barcode</span>
+                <span class="action-dropdown-sub">Instant lookup via camera or photo</span>
+              </div>
+            </button>
+          </div>
+        </div>
 
         <!-- Clickable User Profile Card on the right-hand side -->
         <div class="user-card" id="userCardBtn" role="button" tabindex="0"
