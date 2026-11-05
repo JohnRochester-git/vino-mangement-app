@@ -1313,9 +1313,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveProfileBtn = document.getElementById('saveProfileBtn');
   if (saveProfileBtn) saveProfileBtn.addEventListener('click', saveProfileChanges);
 
+  // Wire Action Dropdown Menu (Add Wine, Recommend a Wine, Scan Barcode)
+  const actionDropdownBtn = document.getElementById('actionDropdownBtn');
+  const actionDropdownMenu = document.getElementById('actionDropdownMenu');
+
+  function closeActionDropdown() {
+    if (actionDropdownMenu) actionDropdownMenu.classList.remove('show');
+    if (actionDropdownBtn) {
+      actionDropdownBtn.setAttribute('aria-expanded', 'false');
+      actionDropdownBtn.classList.remove('active');
+    }
+  }
+
+  if (actionDropdownBtn && actionDropdownMenu) {
+    actionDropdownBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = actionDropdownMenu.classList.toggle('show');
+      actionDropdownBtn.setAttribute('aria-expanded', isOpen);
+      actionDropdownBtn.classList.toggle('active', isOpen);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!actionDropdownMenu.contains(e.target) && !actionDropdownBtn.contains(e.target)) {
+        closeActionDropdown();
+      }
+    });
+  }
+
   // Wire Recommend Wine Modal controls
   const openRecommendWineBtn = document.getElementById('openRecommendWineBtn');
-  if (openRecommendWineBtn) openRecommendWineBtn.addEventListener('click', openRecommendModal);
+  if (openRecommendWineBtn) {
+    openRecommendWineBtn.addEventListener('click', () => {
+      closeActionDropdown();
+      openRecommendModal();
+    });
+  }
 
   const closeRecommendWineBtn = document.getElementById('closeRecommendWineBtn');
   if (closeRecommendWineBtn) closeRecommendWineBtn.addEventListener('click', closeRecommendModal);
@@ -1365,7 +1397,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Wire Add Wine Button
   const openAddWineBtnHero = document.getElementById('openAddWineBtnHero');
-  if (openAddWineBtnHero) openAddWineBtnHero.addEventListener('click', openAddWineModal);
+  if (openAddWineBtnHero) {
+    openAddWineBtnHero.addEventListener('click', () => {
+      closeActionDropdown();
+      openAddWineModal();
+    });
+  }
 
   const closeAddWineBtn = document.getElementById('closeAddWineBtn');
   if (closeAddWineBtn) closeAddWineBtn.addEventListener('click', closeAddWineModal);
@@ -1378,7 +1415,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (scanBarcodeBtn) scanBarcodeBtn.addEventListener('click', openScannerModal);
 
   const openScanBtnHero = document.getElementById('openScanBtnHero');
-  if (openScanBtnHero) openScanBtnHero.addEventListener('click', openScannerModal);
+  if (openScanBtnHero) {
+    openScanBtnHero.addEventListener('click', () => {
+      closeActionDropdown();
+      openScannerModal();
+    });
+  }
 
   const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
   if (closeScannerModalBtn) closeScannerModalBtn.addEventListener('click', closeScannerModal);
@@ -1479,6 +1521,8 @@ document.addEventListener('DOMContentLoaded', () => {
       closeAddWineModal();
       closeProfileModal();
       closeRecommendModal();
+      closeScannerModal();
+      closeActionDropdown();
     }
   });
 
