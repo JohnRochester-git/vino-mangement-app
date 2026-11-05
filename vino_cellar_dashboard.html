@@ -70,6 +70,18 @@
           </svg>
           Recommend a Wine
         </button>
+        <button class="btn-ghost" id="openScanBtnHero">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            <path d="M7 8v8" />
+            <path d="M12 8v8" />
+            <path d="M17 8v8" />
+          </svg>
+          Scan Barcode
+        </button>
         <button class="btn-gold" id="openAddWineBtnHero">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5">
             <path d="M12 5v14M5 12h14" />
@@ -618,6 +630,61 @@
   </div>
 
   <!-- ============================================== -->
+  <!-- BARCODE SCANNER MODAL                          -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop scanner-modal-backdrop" id="barcodeScannerModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="barcodeScannerTitle" style="max-width: 480px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="barcodeScannerTitle">Scan Bottle Barcode</h2>
+          <div class="modal-subtitle">Align the barcode on the back of the bottle within the frame</div>
+        </div>
+        <button class="modal-close-btn" id="closeScannerModalBtn" aria-label="Close scanner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px;">
+        <div id="barcodeReader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #0d0608;"></div>
+
+        <div id="scannerStatusMessage" class="scanner-status-text">
+          <span class="scanner-status-dot"></span>
+          <span id="scannerStatusLabel">Initializing camera feed...</span>
+        </div>
+
+        <div class="scanner-fallback-box" id="scannerFallbackBox" style="display: none; margin-top: 14px;">
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">
+            Camera unavailable? You can also upload a photo of the barcode:
+          </p>
+          <input type="file" id="barcodeFileInput" accept="image/*" style="display: none;">
+          <button type="button" class="btn-ghost" id="barcodeUploadBtn" style="width: 100%; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Upload Barcode Photo
+          </button>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 0 0; margin-top: 16px; background: transparent; border-top: 1px solid var(--hairline); justify-content: space-between;">
+          <button type="button" class="btn-ghost" id="cancelScannerBtn">Cancel</button>
+          <button type="button" class="btn-ghost" id="triggerUploadFallbackBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Upload Photo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
   <!-- ADD WINE MODAL                                 -->
   <!-- ============================================== -->
   <div class="modal-backdrop" id="addWineModal" aria-hidden="true">
@@ -743,6 +810,8 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Barcode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <!-- Shared Storage & Data Services -->
   <script src="js/storage.js"></script>
   <!-- Cellar Dashboard Controller -->

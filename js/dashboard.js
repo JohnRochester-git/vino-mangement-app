@@ -517,6 +517,216 @@ function deleteActiveWine() {
 }
 
 // ----------------------------------------------------
+// BARCODE SCANNER & OPEN FOOD FACTS INTEGRATION
+// ----------------------------------------------------
+let html5QrCodeScanner = null;
+let isScannerRunning = false;
+
+async function openScannerModal() {
+  const modal = document.getElementById('barcodeScannerModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  const statusLabel = document.getElementById('scannerStatusLabel');
+  const fallbackBox = document.getElementById('scannerFallbackBox');
+  if (statusLabel) statusLabel.textContent = 'Requesting camera access...';
+  if (fallbackBox) fallbackBox.style.display = 'none';
+
+  await startScanner();
+}
+
+async function closeScannerModal() {
+  const modal = document.getElementById('barcodeScannerModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+
+  await stopScanner();
+
+  // Restore body scrolling only if addWineModal is also closed
+  const addModal = document.getElementById('addWineModal');
+  if (!addModal || !addModal.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+async function startScanner() {
+  const statusLabel = document.getElementById('scannerStatusLabel');
+  const fallbackBox = document.getElementById('scannerFallbackBox');
+
+  if (typeof Html5Qrcode === 'undefined') {
+    if (statusLabel) statusLabel.textContent = 'Scanner library loading or unavailable.';
+    if (fallbackBox) fallbackBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    if (!html5QrCodeScanner) {
+      html5QrCodeScanner = new Html5Qrcode("barcodeReader", { verbose: false });
+    }
+
+    if (isScannerRunning) return;
+
+    const config = {
+      fps: 10,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const width = Math.min(viewfinderWidth * 0.85, 300);
+        const height = Math.min(viewfinderHeight * 0.55, 160);
+        return { width: Math.round(width), height: Math.round(height) };
+      },
+      aspectRatio: 1.333333
+    };
+
+    await html5QrCodeScanner.start(
+      { facingMode: "environment" },
+      config,
+      onBarcodeScanSuccess,
+      () => { /* frame decode scan loop */ }
+    );
+    isScannerRunning = true;
+    if (statusLabel) statusLabel.textContent = 'Camera active. Point at bottle barcode.';
+  } catch (err) {
+    console.warn("Camera start failed:", err);
+    isScannerRunning = false;
+    if (statusLabel) {
+      statusLabel.textContent = 'Camera access denied or unavailable.';
+    }
+    if (fallbackBox) fallbackBox.style.display = 'block';
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCodeScanner && isScannerRunning) {
+    try {
+      await html5QrCodeScanner.stop();
+    } catch (e) {
+      console.warn("Error stopping scanner:", e);
+    } finally {
+      isScannerRunning = false;
+    }
+  }
+}
+
+async function onBarcodeScanSuccess(decodedText) {
+  await stopScanner();
+  await closeScannerModal();
+
+  showToast(`Barcode detected: ${decodedText}. Looking up wine...`);
+  openAddWineModal();
+  await lookupWineByBarcode(decodedText);
+}
+
+async function lookupWineByBarcode(barcode) {
+  const cleanBarcode = String(barcode).trim();
+  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleanBarcode)}.json`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'VinoCellarApp/1.0 (StudentProject)'
+      }
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    if (data.status === 1 && data.product) {
+      populateAddWineFormFromOFF(data.product, cleanBarcode);
+    } else {
+      showToast(`Product not found in Open Food Facts (${cleanBarcode}). Please enter details manually.`);
+      const nameInput = document.getElementById('inputName');
+      if (nameInput) nameInput.focus();
+    }
+  } catch (err) {
+    console.error("Open Food Facts lookup failed:", err);
+    showToast(`Could not query Open Food Facts. Please enter wine details manually.`);
+    const nameInput = document.getElementById('inputName');
+    if (nameInput) nameInput.focus();
+  }
+}
+
+function populateAddWineFormFromOFF(product, barcode) {
+  const brand = (product.brands || product.brand_owner || '').trim();
+  const rawName = (product.product_name || product.product_name_en || product.generic_name || '').trim();
+
+  let finalName = '';
+  if (brand && rawName) {
+    if (rawName.toLowerCase().includes(brand.toLowerCase())) {
+      finalName = rawName;
+    } else {
+      finalName = `${brand} - ${rawName}`;
+    }
+  } else {
+    finalName = brand || rawName || `Wine (${barcode})`;
+  }
+
+  // Type inference from categories, labels, and product name
+  const catSearch = ((product.categories_tags || []).join(' ') + ' ' + (product.categories || '') + ' ' + (product.labels_tags || []).join(' ') + ' ' + finalName).toLowerCase();
+  let detectedType = 'Red';
+  if (catSearch.includes('sparkling') || catSearch.includes('champagne') || catSearch.includes('prosecco') || catSearch.includes('cava')) {
+    detectedType = 'Sparkling';
+  } else if (catSearch.includes('rose') || catSearch.includes('rosé') || catSearch.includes('pink wine')) {
+    detectedType = 'Rosé';
+  } else if (catSearch.includes('white') || catSearch.includes('blanc') || catSearch.includes('chardonnay') || catSearch.includes('sauvignon blanc') || catSearch.includes('pinot grigio') || catSearch.includes('riesling')) {
+    detectedType = 'White';
+  } else if (catSearch.includes('dessert') || catSearch.includes('sauternes') || catSearch.includes('ice wine')) {
+    detectedType = 'Dessert';
+  } else if (catSearch.includes('port') || catSearch.includes('sherry') || catSearch.includes('fortified') || catSearch.includes('madeira')) {
+    detectedType = 'Fortified';
+  } else {
+    detectedType = 'Red';
+  }
+
+  // Region / Origin
+  let region = (product.origins || product.manufacturing_places || product.countries || '').trim();
+  region = region.replace(/\ben:/g, '').replace(/_/g, ' ');
+
+  // Varietal detection
+  let detectedVarietal = '';
+  const commonVarietals = [
+    'Cabernet Sauvignon', 'Pinot Noir', 'Merlot', 'Chardonnay', 'Sauvignon Blanc',
+    'Syrah', 'Shiraz', 'Zinfandel', 'Malbec', 'Nebbiolo', 'Sangiovese', 'Tempranillo',
+    'Riesling', 'Pinot Grigio', 'Pinot Gris', 'Grenache', 'Bordeaux Blend'
+  ];
+  for (const v of commonVarietals) {
+    if (catSearch.includes(v.toLowerCase())) {
+      detectedVarietal = v;
+      break;
+    }
+  }
+
+  // Vintage detection from name (e.g. 2018, 2020)
+  const vintageMatch = finalName.match(/\b(19\d{2}|20[0-2]\d)\b/);
+
+  // Apply to form inputs
+  const nameInput = document.getElementById('inputName');
+  const typeSelect = document.getElementById('inputType');
+  const regionInput = document.getElementById('inputRegion');
+  const varietalInput = document.getElementById('inputVarietal');
+  const vintageInput = document.getElementById('inputVintage');
+  const notesInput = document.getElementById('inputNotes');
+
+  if (nameInput) nameInput.value = finalName;
+  if (typeSelect) typeSelect.value = detectedType;
+  if (regionInput && region) regionInput.value = region;
+  if (varietalInput && detectedVarietal) varietalInput.value = detectedVarietal;
+  if (vintageInput && vintageMatch) vintageInput.value = parseInt(vintageMatch[0], 10);
+
+  if (notesInput && !notesInput.value) {
+    const alcohol = product.alcohol_100g || product.alcohol_value;
+    let note = `Acquisition scanned via Open Food Facts (UPC/EAN: ${barcode}).`;
+    if (alcohol) note += ` ABV: ${alcohol}%.`;
+    notesInput.value = note;
+  }
+
+  showToast(`✓ Loaded "${finalName}"! Please verify price and vintage.`);
+  const priceInput = document.getElementById('inputPrice');
+  if (priceInput) priceInput.focus();
+}
+
+// ----------------------------------------------------
 // ADD WINE MODAL HANDLERS
 // ----------------------------------------------------
 function openAddWineModal() {
@@ -1163,10 +1373,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelAddWineBtn = document.getElementById('cancelAddWineBtn');
   if (cancelAddWineBtn) cancelAddWineBtn.addEventListener('click', closeAddWineModal);
 
+  // Wire Barcode Scanner controls
   const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
-  if (scanBarcodeBtn) {
-    scanBarcodeBtn.addEventListener('click', () => {
-      showToast('Barcode scanner coming soon');
+  if (scanBarcodeBtn) scanBarcodeBtn.addEventListener('click', openScannerModal);
+
+  const openScanBtnHero = document.getElementById('openScanBtnHero');
+  if (openScanBtnHero) openScanBtnHero.addEventListener('click', openScannerModal);
+
+  const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
+  if (closeScannerModalBtn) closeScannerModalBtn.addEventListener('click', closeScannerModal);
+
+  const cancelScannerBtn = document.getElementById('cancelScannerBtn');
+  if (cancelScannerBtn) cancelScannerBtn.addEventListener('click', closeScannerModal);
+
+  const triggerUploadFallbackBtn = document.getElementById('triggerUploadFallbackBtn');
+  const barcodeFileInput = document.getElementById('barcodeFileInput');
+  if (triggerUploadFallbackBtn && barcodeFileInput) {
+    triggerUploadFallbackBtn.addEventListener('click', () => barcodeFileInput.click());
+  }
+
+  const barcodeUploadBtn = document.getElementById('barcodeUploadBtn');
+  if (barcodeUploadBtn && barcodeFileInput) {
+    barcodeUploadBtn.addEventListener('click', () => barcodeFileInput.click());
+  }
+
+  if (barcodeFileInput) {
+    barcodeFileInput.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        const file = e.target.files[0];
+        try {
+          if (!html5QrCodeScanner) {
+            html5QrCodeScanner = new Html5Qrcode("barcodeReader", { verbose: false });
+          }
+          const decodedText = await html5QrCodeScanner.scanFile(file, true);
+          await onBarcodeScanSuccess(decodedText);
+        } catch (scanErr) {
+          showToast("No readable barcode found in image. Please try another photo.");
+        }
+      }
+    });
+  }
+
+  const barcodeScannerModal = document.getElementById('barcodeScannerModal');
+  if (barcodeScannerModal) {
+    barcodeScannerModal.addEventListener('click', (e) => {
+      if (e.target.id === 'barcodeScannerModal') closeScannerModal();
     });
   }
 
