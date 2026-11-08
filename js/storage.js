@@ -5,6 +5,73 @@
 const STORAGE_KEY = 'vino_cellar_inventory_v2';
 const ACCOUNTS_KEY = 'vino_accounts';
 const USER_KEY = 'vino_user';
+const UNCORK_LOG_KEY = 'vino_uncork_log_v1';
+
+/**
+ * Initial Seeded Uncorked Log (Matches 5 bottles enjoyed stat)
+ */
+const DEFAULT_UNCORK_LOG = [
+  {
+    id: 'uncork_seed_1',
+    wineId: 'wine_margaux_2010',
+    name: 'Château Margaux',
+    vintage: 2010,
+    type: 'Red',
+    varietal: 'Bordeaux Blend (Cabernet / Merlot)',
+    region: 'Margaux, Bordeaux, France',
+    dateStr: 'Nov 4, 2026',
+    timestamp: 1793836800000,
+    note: 'Celebratory anniversary tasting. Silky, opulent, and legendary length.'
+  },
+  {
+    id: 'uncork_seed_2',
+    wineId: 'wine_chablis_2019',
+    name: 'Chablis Grand Cru',
+    vintage: 2019,
+    type: 'White',
+    varietal: 'Chardonnay',
+    region: 'Les Clos, Burgundy, France',
+    dateStr: 'Oct 28, 2026',
+    timestamp: 1793232000000,
+    note: 'Paired with fresh oysters and Maine sea scallops. Crisp mineral perfection.'
+  },
+  {
+    id: 'uncork_seed_3',
+    wineId: 'wine_barolo_2016',
+    name: 'Barolo, Falletto',
+    vintage: 2016,
+    type: 'Red',
+    varietal: 'Nebbiolo',
+    region: 'Piedmont, Italy',
+    dateStr: 'Oct 14, 2026',
+    timestamp: 1792022400000,
+    note: 'Accompanied braised beef short ribs. Noble alpine tannins.'
+  },
+  {
+    id: 'uncork_seed_4',
+    wineId: 'wine_champagne_2012',
+    name: 'Dom Pérignon Vintage',
+    vintage: 2012,
+    type: 'Sparkling',
+    varietal: 'Champagne Blend',
+    region: 'Champagne, France',
+    dateStr: 'Sep 20, 2026',
+    timestamp: 1789948800000,
+    note: 'Toast with close friends. Toasted brioche and vibrant bubbles.'
+  },
+  {
+    id: 'uncork_seed_5',
+    wineId: 'wine_josh_2020',
+    name: 'Josh Cellars Craftsman',
+    vintage: 2020,
+    type: 'Red',
+    varietal: 'Cabernet Sauvignon',
+    region: 'California, USA',
+    dateStr: 'Aug 18, 2026',
+    timestamp: 1787097600000,
+    note: 'Casual backyard barbecue smash burgers. Smooth and fruit-forward.'
+  }
+];
 
 /**
  * Initial Luxury Cellar Demo Collection (7 wines, 16 bottles, $3,867 value)
@@ -240,6 +307,61 @@ function getAppTenureDetails(joinDateStr) {
     tenureString: parts.join(', '),
     memberSinceString: `Member since ${formattedDate}`
   };
+}
+
+/**
+ * Loads the uncorked bottle log from localStorage.
+ */
+function getUncorkLog() {
+  try {
+    const raw = localStorage.getItem(UNCORK_LOG_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Error reading uncork log:', e);
+  }
+  const seeded = JSON.parse(JSON.stringify(DEFAULT_UNCORK_LOG));
+  saveUncorkLog(seeded);
+  return seeded;
+}
+
+/**
+ * Saves uncorked log array to localStorage.
+ */
+function saveUncorkLog(log) {
+  try {
+    localStorage.setItem(UNCORK_LOG_KEY, JSON.stringify(log));
+  } catch (e) {
+    console.error('Error saving uncork log:', e);
+  }
+}
+
+/**
+ * Logs a new bottle uncorking event.
+ */
+function logUncorkEvent(wine, customNote = '') {
+  if (!wine) return;
+  const log = getUncorkLog();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  const newEntry = {
+    id: 'uncork_' + Date.now(),
+    wineId: wine.id,
+    name: wine.name,
+    vintage: wine.vintage,
+    type: wine.type,
+    varietal: wine.varietal || (wine.type + ' Wine'),
+    region: wine.region || 'Cellar Collection',
+    dateStr: `${dateStr} at ${timeStr}`,
+    timestamp: now.getTime(),
+    note: customNote || (wine.pairings && wine.pairings.length ? `Paired with ${wine.pairings.slice(0, 2).join(' & ')}` : 'Enjoyed from personal cellar')
+  };
+
+  log.unshift(newEntry);
+  if (log.length > 50) log.length = 50;
+  saveUncorkLog(log);
+  return newEntry;
 }
 
 /**

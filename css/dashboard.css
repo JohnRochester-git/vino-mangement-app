@@ -575,6 +575,90 @@
   font-weight: 500;
 }
 
+/* ---------- SORT DROPDOWN (FEATURE 1) ---------- */
+.sort-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.sort-by-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 275px;
+  max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.75), 0 0 24px rgba(201, 161, 91, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.2s ease;
+  box-sizing: border-box;
+}
+
+.sort-dropdown-menu.show {
+  display: flex;
+}
+
+.sort-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sort-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8.5px 12px;
+  border-radius: 9px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.16s ease;
+  box-sizing: border-box;
+}
+
+.sort-option-btn:hover {
+  background: var(--surface-2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.sort-option-btn.active {
+  background: rgba(201, 161, 91, 0.12);
+  color: var(--gold);
+  border-color: rgba(201, 161, 91, 0.35);
+  font-weight: 500;
+}
+
+.sort-check-icon {
+  display: none;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.sort-option-btn.active .sort-check-icon {
+  display: inline-block;
+}
+
 /* Grid info header */
 .grid-header {
   display: flex;
@@ -751,6 +835,166 @@
   color: var(--gold);
   backdrop-filter: blur(6px);
   z-index: 2;
+}
+
+/* ---------- CARD QUICK QUANTITY STEPPER (FEATURE 3) ---------- */
+.card-qty-stepper {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: rgba(28, 14, 18, 0.88);
+  border: 1px solid var(--hairline-gold);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.card-qty-stepper:hover {
+  border-color: rgba(201, 161, 91, 0.65);
+  background: rgba(28, 14, 18, 0.96);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.card-qty-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201, 161, 91, 0.15);
+  border: 1px solid rgba(201, 161, 91, 0.3);
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  padding: 0;
+  outline: none;
+}
+
+.card-qty-btn:hover:not(:disabled) {
+  background: var(--gold);
+  color: #1a0d10;
+  border-color: var(--gold);
+  transform: scale(1.1);
+}
+
+.card-qty-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.card-qty-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.card-qty-num {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--gold);
+  padding: 0 4px;
+  min-width: 52px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ---------- CARD DRINK TONIGHT / MATURITY BADGE (FEATURE 2) ---------- */
+.card-maturity-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3.5px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.bottle-card:hover .card-maturity-badge {
+  transform: translateY(-1px);
+}
+
+/* Peak Maturity / Drink Tonight */
+.card-maturity-badge.maturity-peak {
+  background: rgba(201, 161, 91, 0.18);
+  color: #fce3a8;
+  border: 1px solid rgba(201, 161, 91, 0.55);
+  box-shadow: 0 0 12px rgba(201, 161, 91, 0.25);
+}
+
+.maturity-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f7d896;
+  box-shadow: 0 0 8px #f7d896;
+  animation: badgePulse 1.8s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(0.9); opacity: 0.75; box-shadow: 0 0 0 0 rgba(247, 216, 150, 0.7); }
+  70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 5px rgba(247, 216, 150, 0); }
+  100% { transform: scale(0.9); opacity: 0.75; box-shadow: 0 0 0 0 rgba(247, 216, 150, 0); }
+}
+
+/* Ready to Enjoy */
+.card-maturity-badge.maturity-ready {
+  background: rgba(46, 204, 113, 0.16);
+  color: #7eedaa;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.maturity-ready-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #46e08b;
+  box-shadow: 0 0 6px rgba(70, 224, 139, 0.6);
+  flex-shrink: 0;
+}
+
+/* Aging Gracefully */
+.card-maturity-badge.maturity-aging {
+  background: rgba(94, 148, 255, 0.16);
+  color: #adc7ff;
+  border: 1px solid rgba(94, 148, 255, 0.4);
+}
+
+.card-maturity-badge.maturity-aging svg {
+  stroke: #adc7ff;
+  flex-shrink: 0;
+}
+
+/* Keep Aging / Cellar Candidate */
+.card-maturity-badge.maturity-hold {
+  background: rgba(165, 165, 185, 0.16);
+  color: #d8d8e5;
+  border: 1px solid rgba(165, 165, 185, 0.35);
+}
+
+.card-maturity-badge.maturity-hold svg {
+  stroke: #d8d8e5;
+  flex-shrink: 0;
 }
 
 .bottle-bg-art {
@@ -1404,6 +1648,235 @@
   display: block;
 }
 
+/* ---------- PROFILE UNCORK HISTORY & TASTING JOURNAL (FEATURE 6) ---------- */
+.profile-uncork-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+  margin-bottom: 20px;
+}
+
+.profile-uncork-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.profile-uncork-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-uncork-title {
+  font-family: 'Fraunces', serif;
+  font-size: 16.5px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-uncork-title svg {
+  stroke: var(--gold);
+  flex-shrink: 0;
+}
+
+.profile-uncork-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'Inter', sans-serif;
+}
+
+.profile-uncork-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3.5px 10px;
+  border-radius: 999px;
+  background: rgba(201, 161, 91, 0.14);
+  border: 1px solid var(--hairline-gold);
+  color: var(--gold);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.profile-uncork-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 290px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.uncork-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+  box-sizing: border-box;
+}
+
+.uncork-card:hover {
+  border-color: rgba(201, 161, 91, 0.35);
+  transform: translateY(-1px);
+}
+
+.uncork-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.uncork-type-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.uncork-type-icon.red { background: rgba(122, 26, 46, 0.28); color: #f496a9; border: 1px solid rgba(122, 26, 46, 0.6); }
+.uncork-type-icon.white { background: rgba(72, 67, 35, 0.28); color: #ebdca9; border: 1px solid rgba(72, 67, 35, 0.6); }
+.uncork-type-icon.rose { background: rgba(133, 50, 78, 0.28); color: #f9b0c3; border: 1px solid rgba(133, 50, 78, 0.6); }
+.uncork-type-icon.sparkling { background: rgba(111, 91, 32, 0.28); color: #fbe69e; border: 1px solid rgba(111, 91, 32, 0.6); }
+.uncork-type-icon.dessert { background: rgba(107, 74, 24, 0.28); color: var(--gold); border: 1px solid rgba(107, 74, 24, 0.6); }
+.uncork-type-icon.fortified { background: rgba(85, 39, 25, 0.28); color: #f7bda2; border: 1px solid rgba(85, 39, 25, 0.6); }
+
+.uncork-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.uncork-header-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.uncork-wine-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.uncork-vintage {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.uncork-region-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.uncork-bullet {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.uncork-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.uncork-tag.red { background: rgba(122, 26, 46, 0.35); color: #f9bcc9; }
+.uncork-tag.white { background: rgba(72, 67, 35, 0.4); color: #f7eec5; }
+.uncork-tag.rose { background: rgba(133, 50, 78, 0.4); color: #f9cfdc; }
+.uncork-tag.sparkling { background: rgba(111, 91, 32, 0.4); color: #fef0be; }
+.uncork-tag.dessert { background: rgba(107, 74, 24, 0.4); color: var(--gold); }
+.uncork-tag.fortified { background: rgba(85, 39, 25, 0.4); color: #fcd5c3; }
+
+.uncork-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #ded4d8;
+  margin-top: 6px;
+  font-style: italic;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 9px;
+  border-radius: 6px;
+  border-left: 2px solid var(--gold-dim);
+}
+
+.uncork-note svg {
+  stroke: var(--gold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.uncork-date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.uncork-empty-state {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  border: 1px dashed var(--hairline);
+}
+
+.uncork-empty-state svg {
+  margin-bottom: 8px;
+}
+
+.uncork-empty-state p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.uncork-empty-state span {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  display: block;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
 /* ---------- RECOMMEND A WINE MODAL STYLES ---------- */
 .rec-match-badge {
   display: inline-flex;
@@ -1668,6 +2141,34 @@
     max-width: 100%;
     box-sizing: border-box;
   }
+
+  .sort-dropdown-wrapper {
+    width: 100%;
+  }
+
+  .sort-by-btn {
+    width: 100%;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .sort-dropdown-menu {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .uncork-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .uncork-date-pill {
+    align-self: flex-start;
+    margin-left: 46px;
+  }
 }
 
 /* Mobile Phones (<= 560px) */
@@ -1891,6 +2392,22 @@
     align-items: center;
     text-align: center;
     gap: 14px;
+  }
+
+  .card-qty-stepper {
+    top: 10px;
+    right: 10px;
+  }
+
+  .card-maturity-badge {
+    bottom: 10px;
+    left: 10px;
+    font-size: 9.5px;
+    padding: 3px 7.5px;
+  }
+
+  .uncork-date-pill {
+    margin-left: 0;
   }
 
   #barcodeReader {
