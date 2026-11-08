@@ -271,6 +271,61 @@
             </div>
           </div>
         </div>
+
+        <!-- Sort By Dropdown (Feature 1) -->
+        <div class="sort-dropdown-wrapper" id="sortDropdownWrapper">
+          <button class="filter-type-btn" id="sortByBtn" type="button" aria-expanded="false" aria-haspopup="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M6 12h12M10 18h4" />
+            </svg>
+            <span id="sortByLabel">Sort: Default</span>
+            <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          <div class="sort-dropdown-menu" id="sortDropdownMenu">
+            <div class="filter-menu-header">
+              <span class="filter-menu-title">Sort Collection</span>
+              <button type="button" class="btn-clear-filter" id="resetSortBtn">Reset</button>
+            </div>
+            <div class="sort-options-list" id="sortOptionsList">
+              <button type="button" class="sort-option-btn active" data-sort="default">
+                <span>Default Order</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="maturity">
+                <span>Drink Tonight / Peak First</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="vintage-desc">
+                <span>Vintage: Youngest First</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="vintage-asc">
+                <span>Vintage: Oldest First</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="price-desc">
+                <span>Price: Highest to Lowest</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="price-asc">
+                <span>Price: Lowest to Highest</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="quantity-desc">
+                <span>Quantity: Most Bottles</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="sort-option-btn" data-sort="name-asc">
+                <span>Wine Name: A &rarr; Z</span>
+                <svg class="sort-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -403,6 +458,26 @@
               Bottles Uncorked & Logged
             </div>
             <div class="insight-value" id="profileBottlesUncorked">5 Bottles enjoyed</div>
+          </div>
+        </div>
+
+        <!-- Recent Uncorks & Cellar Journal (Feature 6) -->
+        <div class="profile-uncork-section">
+          <div class="profile-uncork-header">
+            <div class="profile-uncork-title-wrap">
+              <div class="profile-uncork-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
+                  <path d="M12 9v9M8 21h8" />
+                </svg>
+                <span>Recent Uncorks & Cellar Journal</span>
+              </div>
+              <div class="profile-uncork-sub">Chronological tasting history of bottles enjoyed from your collection</div>
+            </div>
+            <span class="profile-uncork-badge" id="uncorkLogCountBadge">5 bottles enjoyed</span>
+          </div>
+          <div class="profile-uncork-list" id="profileUncorkList">
+            <!-- Dynamically populated tasting history -->
           </div>
         </div>
 

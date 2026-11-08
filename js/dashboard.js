@@ -8,6 +8,7 @@ let activeWineId = null;
 let activeTypeFilter = 'All';
 let activePairFilter = 'All';
 let activeRegionFilter = 'All';
+let activeSort = 'default';
 let searchQuery = '';
 let viewMode = 'grid'; // 'grid' or 'region'
 let bottlesConsumedCount = 5;
@@ -47,6 +48,89 @@ function getWineSvg(type) {
 }
 
 // ----------------------------------------------------
+// MATURITY BADGE HELPER (FEATURE 2)
+// ----------------------------------------------------
+function getMaturityBadgeInfo(maturityRaw) {
+  const m = (maturityRaw || 'Ready to Enjoy').trim();
+  const lower = m.toLowerCase();
+
+  if (lower.includes('peak')) {
+    return {
+      cssClass: 'maturity-peak',
+      label: 'Drink Tonight',
+      title: 'Peak Maturity — Ideal drinking window right now',
+      iconHtml: '<span class="maturity-pulse-dot"></span>'
+    };
+  }
+  if (lower.includes('ready')) {
+    return {
+      cssClass: 'maturity-ready',
+      label: 'Ready to Enjoy',
+      title: 'Ready to Enjoy — In prime drinking window',
+      iconHtml: '<span class="maturity-ready-dot"></span>'
+    };
+  }
+  if (lower.includes('grace')) {
+    return {
+      cssClass: 'maturity-aging',
+      label: 'Aging Gracefully',
+      title: 'Aging Gracefully — Developing secondary complexity in cellar',
+      iconHtml: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    };
+  }
+  return {
+    cssClass: 'maturity-hold',
+    label: 'Keep Aging',
+    title: 'Cellar Candidate — Hold for further cellar maturation',
+    iconHtml: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+  };
+}
+
+// ----------------------------------------------------
+// QUICK IN-CARD QUANTITY STEPPER (FEATURE 3)
+// ----------------------------------------------------
+function quickAdjustWineQty(event, wineId, delta) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const wine = cellar.find(w => w.id === wineId);
+  if (!wine) return;
+
+  const currentQty = Number(wine.quantity) || 0;
+  let newQty = currentQty + delta;
+  if (newQty < 0) newQty = 0;
+
+  if (delta < 0) {
+    if (currentQty <= 0) {
+      showToast(`"${wine.name}" is already depleted`);
+      return;
+    }
+    bottlesConsumedCount++;
+    logUncorkEvent(wine);
+    if (newQty === 0) {
+      showToast(`Uncorked last bottle of "${wine.name}"`);
+    } else {
+      showToast(`Uncorked 1 bottle of "${wine.name}" (${newQty} remaining)`);
+    }
+  } else if (delta > 0) {
+    showToast(`Added 1 bottle of "${wine.name}" (Now ${newQty})`);
+  }
+
+  wine.quantity = newQty;
+  saveCellar(cellar);
+  updateStats();
+  renderMain();
+
+  // If this wine is open in overview modal, refresh it
+  if (activeWineId === wineId) {
+    openOverview(wineId);
+  }
+}
+window.quickAdjustWineQty = quickAdjustWineQty;
+
+// ----------------------------------------------------
 // SINGLE BOTTLE CARD HTML BUILDER
 // ----------------------------------------------------
 function buildBottleCardHtml(w) {
@@ -55,14 +139,32 @@ function buildBottleCardHtml(w) {
   const pairingsMini = (w.pairings || []).slice(0, 3).map(p => `<span class="pair-pill-mini">${escapeHtml(p)}</span>`).join('');
   const worthFormatted = Number(w.price).toLocaleString();
   const qty = Number(w.quantity) || 0;
+  const mat = getMaturityBadgeInfo(w.maturity);
 
   return `
   <div class="bottle-card" onclick="openOverview('${w.id}')" title="Click to view full sommelier overview">
     <div class="bottle-image">
       <span class="bottle-tag ${typeClass}">${escapeHtml(w.type)}</span>
-      <span class="bottle-qty-badge">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
+      
+      <!-- Quick Quantity Stepper (Feature 3) -->
+      <div class="card-qty-stepper" onclick="event.stopPropagation();" title="Quick adjust bottle quantity">
+        <button type="button" class="card-qty-btn dec" onclick="quickAdjustWineQty(event, '${w.id}', -1)" aria-label="Uncork 1 bottle" title="Uncork 1 bottle" ${qty <= 0 ? 'disabled' : ''}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span class="card-qty-num">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
+        <button type="button" class="card-qty-btn inc" onclick="quickAdjustWineQty(event, '${w.id}', 1)" aria-label="Add 1 bottle" title="Add 1 bottle">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
       <div class="bottle-bg-art">
         ${getWineSvg(w.type)}
+      </div>
+
+      <!-- Drink Tonight / Maturity Status Badge (Feature 2) -->
+      <div class="card-maturity-badge ${mat.cssClass}" title="${escapeHtml(mat.title)}">
+        ${mat.iconHtml}
+        <span>${escapeHtml(mat.label)}</span>
       </div>
     </div>
     <div class="bottle-body">
@@ -126,6 +228,45 @@ function getFilteredWines() {
 }
 
 // ----------------------------------------------------
+// SORTING LOGIC (FEATURE 1)
+// ----------------------------------------------------
+function sortWinesList(list) {
+  const sorted = [...list];
+  switch (activeSort) {
+    case 'vintage-desc':
+      return sorted.sort((a, b) => (Number(b.vintage) || 0) - (Number(a.vintage) || 0));
+    case 'vintage-asc':
+      return sorted.sort((a, b) => (Number(a.vintage) || 0) - (Number(b.vintage) || 0));
+    case 'price-desc':
+      return sorted.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    case 'price-asc':
+      return sorted.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    case 'quantity-desc':
+      return sorted.sort((a, b) => (Number(b.quantity) || 0) - (Number(a.quantity) || 0));
+    case 'name-asc':
+      return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    case 'maturity': {
+      const rank = {
+        'peak maturity': 1,
+        'drink tonight': 1,
+        'ready to enjoy': 2,
+        'aging gracefully': 3,
+        'cellar candidate': 4,
+        'keep aging': 4
+      };
+      return sorted.sort((a, b) => {
+        const rankA = rank[(a.maturity || '').toLowerCase().trim()] || 99;
+        const rankB = rank[(b.maturity || '').toLowerCase().trim()] || 99;
+        if (rankA !== rankB) return rankA - rankB;
+        return (Number(a.vintage) || 0) - (Number(b.vintage) || 0);
+      });
+    }
+    default:
+      return sorted;
+  }
+}
+
+// ----------------------------------------------------
 // RENDER MAIN VIEW (STANDARD GRID OR REGION CATEGORIZED)
 // ----------------------------------------------------
 function renderMain() {
@@ -134,7 +275,7 @@ function renderMain() {
   const countDisplay = document.getElementById('gridCountDisplay');
   const modeIndicator = document.getElementById('viewModeIndicator');
 
-  const filtered = getFilteredWines();
+  const filtered = sortWinesList(getFilteredWines());
 
   if (viewMode === 'grid') {
     gridContainer.style.display = 'grid';
@@ -192,7 +333,7 @@ function renderMain() {
     countDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> wines across <strong>${regionKeys.length}</strong> regions`;
 
     regionContainer.innerHTML = regionKeys.map(regName => {
-      const winesInRegion = regionsMap[regName];
+      const winesInRegion = sortWinesList(regionsMap[regName]);
       const regBottles = winesInRegion.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
       const regValue = winesInRegion.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
 
@@ -276,6 +417,80 @@ function toggleRegionView() {
 }
 
 // ----------------------------------------------------
+// CELLAR JOURNAL & CONSUMPTION HISTORY (FEATURE 6)
+// ----------------------------------------------------
+function renderUncorkHistory() {
+  const container = document.getElementById('profileUncorkList');
+  const countBadge = document.getElementById('uncorkLogCountBadge');
+  const profileBottlesUncorked = document.getElementById('profileBottlesUncorked');
+  if (!container) return;
+
+  const log = getUncorkLog();
+  const count = log.length;
+
+  if (countBadge) countBadge.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
+  if (profileBottlesUncorked) profileBottlesUncorked.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
+
+  if (count === 0) {
+    container.innerHTML = `
+      <div class="uncork-empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5">
+          <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
+          <path d="M12 9v9M8 21h8" />
+        </svg>
+        <p>No bottles uncorked yet.</p>
+        <span>Use the <strong>&minus;</strong> button on any wine card or click <strong>Uncork 1 Bottle</strong> in the bottle overview to start your cellar tasting log.</span>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = log.map(entry => {
+    const typeClass = (entry.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return `
+      <div class="uncork-card">
+        <div class="uncork-left">
+          <div class="uncork-type-icon ${typeClass}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
+              <path d="M12 9v9M8 21h8" />
+            </svg>
+          </div>
+          <div class="uncork-meta">
+            <div class="uncork-header-line">
+              <h4 class="uncork-wine-name">${escapeHtml(entry.name)}</h4>
+              ${entry.vintage ? `<span class="uncork-vintage">${entry.vintage} Vintage</span>` : ''}
+            </div>
+            <div class="uncork-region-line">
+              <span>${escapeHtml(entry.region || entry.varietal || '')}</span>
+              <span class="uncork-bullet">&bull;</span>
+              <span class="uncork-tag ${typeClass}">${escapeHtml(entry.type || 'Red')}</span>
+            </div>
+            ${entry.note ? `
+              <div class="uncork-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>${escapeHtml(entry.note)}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="uncork-date-pill">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>${escapeHtml(entry.dateStr)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ----------------------------------------------------
 // USER PROFILE MODAL
 // ----------------------------------------------------
 function openProfileModal() {
@@ -347,8 +562,8 @@ function openProfileModal() {
     document.getElementById('profileOldestVintage').textContent = `${stats.oldestVintage} Vintage (${age} Years Old)`;
   }
 
-  // Bottles enjoyed
-  document.getElementById('profileBottlesUncorked').textContent = `${bottlesConsumedCount} bottles enjoyed`;
+  // Cellar Tasting Journal (Feature 6)
+  renderUncorkHistory();
 
   // Populate edit form
   document.getElementById('editProfileName').value = user.username || 'Luke R';
@@ -476,13 +691,20 @@ function adjustWineQty(delta) {
   const wine = cellar.find(w => w.id === activeWineId);
   if (!wine) return;
 
-  let newQty = (Number(wine.quantity) || 0) + delta;
+  const currentQty = Number(wine.quantity) || 0;
+  let newQty = currentQty + delta;
   if (newQty < 0) newQty = 0;
-  wine.quantity = newQty;
 
   if (delta < 0) {
+    if (currentQty <= 0) {
+      showToast(`"${wine.name}" is already depleted`);
+      return;
+    }
     bottlesConsumedCount++;
+    logUncorkEvent(wine);
   }
+
+  wine.quantity = newQty;
 
   saveCellar(cellar);
   updateStats();
@@ -1277,12 +1499,117 @@ function setupFilters() {
 }
 
 // ----------------------------------------------------
+// SORT CONTROLS SETUP (FEATURE 1)
+// ----------------------------------------------------
+function setupSortControls() {
+  const sortBtn = document.getElementById('sortByBtn');
+  const sortMenu = document.getElementById('sortDropdownMenu');
+  const sortLabel = document.getElementById('sortByLabel');
+  const resetBtn = document.getElementById('resetSortBtn');
+  const sortOptions = document.querySelectorAll('#sortOptionsList .sort-option-btn');
+
+  const SORT_LABELS = {
+    'default': 'Sort: Default',
+    'maturity': 'Sort: Drink Tonight',
+    'vintage-desc': 'Sort: Youngest',
+    'vintage-asc': 'Sort: Oldest',
+    'price-desc': 'Sort: Price High',
+    'price-asc': 'Sort: Price Low',
+    'quantity-desc': 'Sort: Quantity',
+    'name-asc': 'Sort: Name A-Z'
+  };
+
+  function updateSortUI() {
+    if (sortLabel) {
+      sortLabel.textContent = SORT_LABELS[activeSort] || 'Sort: Default';
+    }
+    if (sortBtn) {
+      sortBtn.classList.toggle('has-filter', activeSort !== 'default');
+    }
+    sortOptions.forEach(opt => {
+      const match = opt.getAttribute('data-sort') === activeSort;
+      opt.classList.toggle('active', match);
+    });
+  }
+
+  if (sortBtn && sortMenu) {
+    sortBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = sortMenu.classList.toggle('show');
+      sortBtn.setAttribute('aria-expanded', isOpen);
+      sortBtn.classList.toggle('active', isOpen);
+
+      // Close filter menu if open
+      const filterMenu = document.getElementById('filterDropdownMenu');
+      const filterBtn = document.getElementById('filterByTypeBtn');
+      if (filterMenu) filterMenu.classList.remove('show');
+      if (filterBtn) {
+        filterBtn.setAttribute('aria-expanded', 'false');
+        filterBtn.classList.remove('active');
+      }
+    });
+
+    sortMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!sortMenu.contains(e.target) && e.target !== sortBtn) {
+        sortMenu.classList.remove('show');
+        sortBtn.setAttribute('aria-expanded', 'false');
+        sortBtn.classList.remove('active');
+      }
+    });
+  }
+
+  // Also close sortMenu when filterBtn is opened
+  const filterBtn = document.getElementById('filterByTypeBtn');
+  if (filterBtn && sortMenu && sortBtn) {
+    filterBtn.addEventListener('click', () => {
+      sortMenu.classList.remove('show');
+      sortBtn.setAttribute('aria-expanded', 'false');
+      sortBtn.classList.remove('active');
+    });
+  }
+
+  sortOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      const sortKey = opt.getAttribute('data-sort') || 'default';
+      activeSort = sortKey;
+      updateSortUI();
+      if (sortMenu) sortMenu.classList.remove('show');
+      if (sortBtn) {
+        sortBtn.setAttribute('aria-expanded', 'false');
+        sortBtn.classList.remove('active');
+      }
+      renderMain();
+      showToast(`Sorted by ${opt.querySelector('span').textContent.trim()}`);
+    });
+  });
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      activeSort = 'default';
+      updateSortUI();
+      if (sortMenu) sortMenu.classList.remove('show');
+      if (sortBtn) {
+        sortBtn.setAttribute('aria-expanded', 'false');
+        sortBtn.classList.remove('active');
+      }
+      renderMain();
+      showToast('Reset cellar sorting to default');
+    });
+  }
+}
+
+// ----------------------------------------------------
 // INITIALIZATION
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   cellar = loadCellar();
   updateStats();
   setupFilters();
+  setupSortControls();
   updateRegionFilterChips();
   renderMain();
 
@@ -1523,6 +1850,22 @@ document.addEventListener('DOMContentLoaded', () => {
       closeRecommendModal();
       closeScannerModal();
       closeActionDropdown();
+
+      const sortMenu = document.getElementById('sortDropdownMenu');
+      const sortBtn = document.getElementById('sortByBtn');
+      if (sortMenu) sortMenu.classList.remove('show');
+      if (sortBtn) {
+        sortBtn.setAttribute('aria-expanded', 'false');
+        sortBtn.classList.remove('active');
+      }
+
+      const filterMenu = document.getElementById('filterDropdownMenu');
+      const filterBtn = document.getElementById('filterByTypeBtn');
+      if (filterMenu) filterMenu.classList.remove('show');
+      if (filterBtn) {
+        filterBtn.setAttribute('aria-expanded', 'false');
+        filterBtn.classList.remove('active');
+      }
     }
   });
 
