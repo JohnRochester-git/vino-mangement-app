@@ -1,0 +1,27 @@
+{
+  "name": "vino-mangement-app",
+  "version": "1.0.0",
+  "description": "Vino is a personal wine cellar management application designed to help users organize, track, and manage their wine collection.",
+  "keywords": [],
+  "homepage": "https://github.com/JohnRochester-git/vino-mangement-app#readme",
+  "bugs": {
+    "url": "https://github.com/JohnRochester-git/vino-mangement-app/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JohnRochester-git/vino-mangement-app.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7"
+  },
+  "devDependencies": {
+    "wrangler": "4.159.0"
+  }
+}
