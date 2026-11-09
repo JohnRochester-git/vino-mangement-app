@@ -5,3 +5,6 @@ __pycache__/
 *.tfstate
 *.tfstate.*
 *.tfvars
+node_modules/
+.wrangler/
+.dev.vars

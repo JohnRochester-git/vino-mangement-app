@@ -1,0 +1,21 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+    "name": "vino",
+    "main": "src/index.js",
+    "compatibility_date": "2026-11-09",
+    "observability": { "enabled": true },
+
+    "assets": { "directory": "../frontend", "binding": "ASSETS" },
+
+    "containers": [
+        { "class_name": "Backend", "image": "../backend/Dockerfile", "max_instances": 3}
+    ],
+
+    "durable_objects": {
+        "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+    },
+
+    "exports": {
+        "Backend": { "type": "durable-object", "storage": "sqlite" }
+    }
+}
