@@ -13,11 +13,11 @@ export class Backend extends Container {
         ALLOWED_ORIGINS: "",
         BARCODE_PROVIDER: "none",
     };
-
-    static outboundByHost = {
-        "d1.internal": handleD1Bridge,
-    };
 }
+
+Backend.outboundByHost = {
+    "d1.internal": handleD1Bridge,
+};
 
 async function handleD1Bridge(request, env) {
     if (request.method !== "POST") {
