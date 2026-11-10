@@ -2,34 +2,57 @@
    Vino — Welcome Landing Page Script (welcome.js)
    ========================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
-  // ---- Auth guard: redirect to login if no session ----
-  const session = getUserSession();
-  if (!session) {
-    window.location.href = 'login.html';
+document.addEventListener('DOMContentLoaded', async () => {
+  if (isOpenedAsFile()) return;
+
+  const greetingEl = document.getElementById('welcomeGreeting');
+
+  // ---- Auth guard: getMe() sends logged-out users to login.html ----
+  let me;
+  try {
+    me = await getMe();
+  } catch (err) {
+    if (greetingEl) greetingEl.textContent = err.message;
     return;
   }
 
   // ---- Personalize greeting ----
   (function initGreeting() {
     try {
-      const greetingEl = document.getElementById('welcomeGreeting');
-      if (session && session.firstName && greetingEl) {
+      const firstName = me.user && me.user.userFname;
+      if (firstName && greetingEl) {
         const hour = new Date().getHours();
         let timeGreeting = 'Good evening';
         if (hour < 12) timeGreeting = 'Good morning';
         else if (hour < 17) timeGreeting = 'Good afternoon';
 
-        greetingEl.innerHTML = `${timeGreeting}, <span class="user-name">${escapeHtml(session.firstName)}</span>. Here's your cellar at a glance.`;
+        greetingEl.innerHTML = `${timeGreeting}, <span class="user-name">${escapeHtml(firstName)}</span>. Here's your cellar at a glance.`;
       }
     } catch (e) {
       console.warn('Greeting initialization error', e);
     }
   })();
 
-  // ---- Load cellar data and compute stats ----
-  const cellar = loadCellar();
-  const stats = calculateCellarStats(cellar);
+  // ---- Load cellar stats from the server ----
+  const collection = (me.collections || [])[0];
+  if (!collection) {
+    if (greetingEl) greetingEl.textContent = "You don't have a cellar yet.";
+    return;
+  }
+
+  let value, items;
+  try {
+    [value, items] = await Promise.all([getValue(collection.collectionId), listItems(collection.collectionId)]);
+  } catch (err) {
+    if (greetingEl) greetingEl.textContent = err.message;
+    return;
+  }
+
+  const stats = {
+    totalBottles: value.bottleCount,
+    totalValue: Math.round(value.totalValueCents / 100),
+    distinctCount: items.count
+  };
 
   // ---- Smooth Animated Counter ----
   function animateCounter(elementId, targetValue, prefix = '', suffix = '') {

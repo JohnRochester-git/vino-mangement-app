@@ -3,7 +3,9 @@ Vino is a personal wine cellar management application designed to help users org
 
 ## Run it locally
 
-This starts the app's backend on your computer with one command. It uses Docker, which runs the app inside a container: a sealed-off package with everything the app needs, so it runs the same way on every laptop and on the live site.
+This runs the whole app on your computer: the backend (the server that stores accounts and wines) and the pages you click through. It takes two terminals: one for the backend, one for the pages.
+
+The backend uses Docker, which runs the app inside a container: a sealed-off package with everything the app needs, so it runs the same way on every laptop and on the live site.
 
 ### What you need
 
@@ -35,6 +37,41 @@ Application is up at http://localhost:8000/health
 ### Check that it's working
 
 Open http://localhost:8000/health in a browser. You should see `OK`.
+
+### Load the demo cellar (optional)
+
+This adds a demo account holding the seven sample wines. Run it once, while the app is running. Pick any password of 8 or more characters in place of `choose-a-password`.
+
+The command is the same on Windows, Mac and Linux:
+
+```
+docker compose exec -e DEMO_PASSWORD=choose-a-password backend python -m vino.seed_demo
+```
+
+It prints the login: `demo@example.com` and the password you chose. Running it again changes nothing.
+
+### Open the pages
+
+In a **second** terminal, from the same main folder, start a small web server for the pages in the `frontend/` folder:
+
+**Windows (PowerShell):**
+
+```powershell
+py -m http.server 5500 --directory frontend
+```
+
+**Mac or Linux:**
+
+```bash
+python3 -m http.server 5500 --directory frontend
+```
+
+Leave it running, and open **http://localhost:5500/login.html**. Sign up, or log in with the demo account. Press Ctrl+C in that terminal to stop the web server.
+
+Two things to know:
+
+- **Use `localhost`, not `127.0.0.1`.** The browser treats them as different sites, so a login made on one doesn't count on the other.
+- **Opening the HTML files directly (double-clicking `login.html`) no longer works.** A page opened from a file can't keep you logged in or reach the backend, so it shows a message telling you to use the web server instead.
 
 ### Stop the app
 
@@ -74,7 +111,11 @@ The test always stops the app when it finishes, even if you started it yourself 
 
 ### What this runs
 
-Only the backend. The frontend pages (`login.html` and the others) don't talk to the backend yet, so open them straight from the files in your browser.
+`start.py` runs the backend: the API at http://localhost:8000/api/v1, with a local database that sets itself up on first start. The database is kept in a Docker volume called `vino-data`, so accounts and wines survive `stop.py` and restarts. Every endpoint is described in [docs/api.md](docs/api.md).
+
+The pages (`login.html`, `welcome.html` and `vino_cellar_dashboard.html`, in `frontend/`) are served separately on port 5500 (see [Open the pages](#open-the-pages)). They get everything from the backend: nothing is saved in the browser any more, so the backend must be running. If it isn't, the pages say "Can't reach the Vino server".
+
+To load demo data, or to start the database over, see [backend/README.md](backend/README.md#the-database).
 
 ### If something goes wrong
 
