@@ -11,7 +11,34 @@ let activeRegionFilter = 'All';
 let activeSort = 'default';
 let searchQuery = '';
 let viewMode = 'grid'; // 'grid' or 'region'
-let bottlesConsumedCount = 5;
+let currentUser = null;      // from GET /auth/me
+let collectionId = null;     // the user's first collection
+let serverValueCents = null; // collection total from GET /collections/{id}/value
+let blendOptions = [];       // [{blendID, blendStyle}] from GET /blends
+let qtyRequestInFlight = false;
+
+// Drinking-window choices in the Add Wine form, as years from today.
+// "Estimate" sends no dates, so the server estimates from type and vintage.
+const DRINK_WINDOW_OFFSETS = {
+  'Ready to Enjoy': { fromYears: 0, byYears: 3 },
+  'Peak Maturity': { fromYears: 0, byYears: 1 },
+  'Aging Gracefully': { fromYears: 0, byYears: 8 },
+  'Cellar Candidate': { fromYears: 3, byYears: 15 }
+};
+
+// Which Add Wine input shows each API field's error.
+const FIELD_INPUTS = {
+  'wine.wineName': 'inputName',
+  'wine.wineType': 'inputType',
+  'wine.blendID': 'inputVarietal',
+  'wine.wineRegion': 'inputRegion',
+  'wine.wineVint': 'inputVintage',
+  'wine.wineValue': 'inputPrice',
+  'itemQuantity': 'inputQty',
+  'wine.wineDescription': 'inputNotes',
+  'itemDrinkFrom': 'inputMaturity',
+  'itemDrinkBy': 'inputMaturity'
+};
 
 // ----------------------------------------------------
 // STATS CALCULATION & DOM UPDATE
@@ -26,8 +53,21 @@ function updateStats() {
 
   if (distinctEl) distinctEl.textContent = stats.distinctCount;
   if (bottlesEl) bottlesEl.textContent = stats.totalBottles;
-  if (valueEl) valueEl.textContent = `$${stats.totalValue.toLocaleString()}`;
+  // The server's total is authoritative; fall back to the local sum until it arrives.
+  const totalValue = serverValueCents !== null ? serverValueCents / 100 : stats.totalValue;
+  if (valueEl) valueEl.textContent = `$${totalValue.toLocaleString()}`;
   if (oldestEl) oldestEl.textContent = stats.oldestVintage;
+}
+
+// Fetches the collection total from the server, then redraws the stats bar.
+async function refreshServerValue() {
+  try {
+    const value = await getValue(collectionId);
+    serverValueCents = value.totalValueCents;
+  } catch (err) {
+    serverValueCents = null;
+  }
+  updateStats();
 }
 
 // ----------------------------------------------------
@@ -53,6 +93,32 @@ function getWineSvg(type) {
 function getMaturityBadgeInfo(maturityRaw) {
   const m = (maturityRaw || 'Ready to Enjoy').trim();
   const lower = m.toLowerCase();
+
+  // Labels from the server's drinkStatus (see MATURITY_LABELS in storage.js)
+  if (lower.includes('past peak')) {
+    return {
+      cssClass: 'maturity-peak',
+      label: 'Past Peak',
+      title: 'Past Peak — Past its drinking window; open it soon',
+      iconHtml: '<span class="maturity-pulse-dot"></span>'
+    };
+  }
+  if (lower.includes('drink soon')) {
+    return {
+      cssClass: 'maturity-peak',
+      label: 'Drink Soon',
+      title: 'Drink Soon — Near the end of its drinking window',
+      iconHtml: '<span class="maturity-pulse-dot"></span>'
+    };
+  }
+  if (lower.includes('no drinking window')) {
+    return {
+      cssClass: 'maturity-aging',
+      label: 'No Window Set',
+      title: 'No drinking window saved for this wine',
+      iconHtml: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    };
+  }
 
   if (lower.includes('peak')) {
     return {
@@ -94,39 +160,7 @@ function quickAdjustWineQty(event, wineId, delta) {
     event.stopPropagation();
     event.preventDefault();
   }
-
-  const wine = cellar.find(w => w.id === wineId);
-  if (!wine) return;
-
-  const currentQty = Number(wine.quantity) || 0;
-  let newQty = currentQty + delta;
-  if (newQty < 0) newQty = 0;
-
-  if (delta < 0) {
-    if (currentQty <= 0) {
-      showToast(`"${wine.name}" is already depleted`);
-      return;
-    }
-    bottlesConsumedCount++;
-    logUncorkEvent(wine);
-    if (newQty === 0) {
-      showToast(`Uncorked last bottle of "${wine.name}"`);
-    } else {
-      showToast(`Uncorked 1 bottle of "${wine.name}" (${newQty} remaining)`);
-    }
-  } else if (delta > 0) {
-    showToast(`Added 1 bottle of "${wine.name}" (Now ${newQty})`);
-  }
-
-  wine.quantity = newQty;
-  saveCellar(cellar);
-  updateStats();
-  renderMain();
-
-  // If this wine is open in overview modal, refresh it
-  if (activeWineId === wineId) {
-    openOverview(wineId);
-  }
+  changeWineQty(wineId, delta);
 }
 window.quickAdjustWineQty = quickAdjustWineQty;
 
@@ -137,22 +171,22 @@ function buildBottleCardHtml(w) {
   const typeClass = (w.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const ageStr = getWineAge(w.vintage);
   const pairingsMini = (w.pairings || []).slice(0, 3).map(p => `<span class="pair-pill-mini">${escapeHtml(p)}</span>`).join('');
-  const worthFormatted = Number(w.price).toLocaleString();
+  const worthFormatted = formatPrice(w.price);
   const qty = Number(w.quantity) || 0;
   const mat = getMaturityBadgeInfo(w.maturity);
 
   return `
-  <div class="bottle-card" onclick="openOverview('${w.id}')" title="Click to view full sommelier overview">
+  <div class="bottle-card" onclick="openOverview(${Number(w.id)})" title="Click to view full sommelier overview">
     <div class="bottle-image">
       <span class="bottle-tag ${typeClass}">${escapeHtml(w.type)}</span>
       
       <!-- Quick Quantity Stepper (Feature 3) -->
       <div class="card-qty-stepper" onclick="event.stopPropagation();" title="Quick adjust bottle quantity">
-        <button type="button" class="card-qty-btn dec" onclick="quickAdjustWineQty(event, '${w.id}', -1)" aria-label="Uncork 1 bottle" title="Uncork 1 bottle" ${qty <= 0 ? 'disabled' : ''}>
+        <button type="button" class="card-qty-btn dec" onclick="quickAdjustWineQty(event, ${Number(w.id)}, -1)" aria-label="Uncork 1 bottle" title="Uncork 1 bottle" ${qty <= 0 ? 'disabled' : ''}>
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <span class="card-qty-num">${qty} ${qty === 1 ? 'bottle' : 'bottles'}</span>
-        <button type="button" class="card-qty-btn inc" onclick="quickAdjustWineQty(event, '${w.id}', 1)" aria-label="Add 1 bottle" title="Add 1 bottle">
+        <button type="button" class="card-qty-btn inc" onclick="quickAdjustWineQty(event, ${Number(w.id)}, 1)" aria-label="Add 1 bottle" title="Add 1 bottle">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -182,8 +216,8 @@ function buildBottleCardHtml(w) {
       </div>
 
       <div class="bottle-meta-row">
-        <div class="bottle-worth">$${worthFormatted}</div>
-        <div class="bottle-age">${w.vintage} • ${ageStr}</div>
+        <div class="bottle-worth">${worthFormatted}</div>
+        <div class="bottle-age">${w.vintage ? `${w.vintage} • ${ageStr}` : 'NV'}</div>
       </div>
 
       <div class="bottle-click-hint">
@@ -247,16 +281,21 @@ function sortWinesList(list) {
       return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     case 'maturity': {
       const rank = {
+        'past peak': 0,
+        'drink soon': 1,
         'peak maturity': 1,
         'drink tonight': 1,
         'ready to enjoy': 2,
         'aging gracefully': 3,
         'cellar candidate': 4,
-        'keep aging': 4
+        'keep aging': 4,
+        'no drinking window': 5
       };
+      // "(est.)" marks a server-estimated window; it sorts the same.
+      const key = w => (w.maturity || '').toLowerCase().replace('(est.)', '').trim();
       return sorted.sort((a, b) => {
-        const rankA = rank[(a.maturity || '').toLowerCase().trim()] || 99;
-        const rankB = rank[(b.maturity || '').toLowerCase().trim()] || 99;
+        const rankA = rank[key(a)] ?? 99;
+        const rankB = rank[key(b)] ?? 99;
         if (rankA !== rankB) return rankA - rankB;
         return (Number(a.vintage) || 0) - (Number(b.vintage) || 0);
       });
@@ -335,7 +374,7 @@ function renderMain() {
     regionContainer.innerHTML = regionKeys.map(regName => {
       const winesInRegion = sortWinesList(regionsMap[regName]);
       const regBottles = winesInRegion.reduce((sum, w) => sum + (Number(w.quantity) || 0), 0);
-      const regValue = winesInRegion.reduce((sum, w) => sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
+      const regValue = winesInRegion.reduce((sum, w) => w.price === null ? sum : sum + ((Number(w.quantity) || 0) * (Number(w.price) || 0)), 0);
 
       return `
         <div class="region-group-card">
@@ -419,14 +458,46 @@ function toggleRegionView() {
 // ----------------------------------------------------
 // CELLAR JOURNAL & CONSUMPTION HISTORY (FEATURE 6)
 // ----------------------------------------------------
-function renderUncorkHistory() {
+// Turns a server journal entry into what the journal card shows.
+// Region and grape come from the cellar list, which includes finished bottles.
+function toUncorkEntry(c) {
+  const wine = cellar.find(w => w.id === c.itemID) || {};
+  const when = new Date(c.consumeTime);
+  const dateStr = isNaN(when.getTime()) ? '' :
+    `${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  return {
+    name: c.wineName,
+    vintage: c.wineVint,
+    type: c.wineType,
+    region: wine.region || '',
+    varietal: wine.varietal || '',
+    quantity: c.consumeQuantity,
+    note: c.consumeNotes || '',
+    dateStr
+  };
+}
+
+async function renderUncorkHistory() {
   const container = document.getElementById('profileUncorkList');
   const countBadge = document.getElementById('uncorkLogCountBadge');
   const profileBottlesUncorked = document.getElementById('profileBottlesUncorked');
   if (!container) return;
 
-  const log = getUncorkLog();
-  const count = log.length;
+  if (countBadge) countBadge.textContent = '…';
+  if (profileBottlesUncorked) profileBottlesUncorked.textContent = '…';
+
+  let log;
+  try {
+    const data = await listConsumptions(collectionId);
+    log = data.consumptions.map(toUncorkEntry);
+  } catch (err) {
+    if (countBadge) countBadge.textContent = '—';
+    if (profileBottlesUncorked) profileBottlesUncorked.textContent = '—';
+    container.innerHTML = `<div class="uncork-empty-state"><p>The tasting journal couldn't be loaded.</p><span>${escapeHtml(firstErrorMessage(err))}</span></div>`;
+    return;
+  }
+  // An entry can record more than one bottle, so count bottles, not entries.
+  const count = log.reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
 
   if (countBadge) countBadge.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
   if (profileBottlesUncorked) profileBottlesUncorked.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
@@ -460,6 +531,7 @@ function renderUncorkHistory() {
             <div class="uncork-header-line">
               <h4 class="uncork-wine-name">${escapeHtml(entry.name)}</h4>
               ${entry.vintage ? `<span class="uncork-vintage">${entry.vintage} Vintage</span>` : ''}
+              ${entry.quantity > 1 ? `<span class="uncork-vintage">${entry.quantity} bottles</span>` : ''}
             </div>
             <div class="uncork-region-line">
               <span>${escapeHtml(entry.region || entry.varietal || '')}</span>
@@ -495,33 +567,20 @@ function renderUncorkHistory() {
 // ----------------------------------------------------
 function openProfileModal() {
   const modal = document.getElementById('profileModal');
-  let user = { username: 'Luke R', email: 'lukeroch38@example.com', memberSince: '2024-10-15' };
+  const user = currentUser || {};
 
-  const savedUser = getUserSession();
-  if (savedUser) {
-    user = Object.assign(user, savedUser);
-  }
-
-  // Initials
-  const parts = (user.username || 'Luke R').trim().split(/\s+/);
-  let initials = 'LR';
-  if (parts.length >= 2) {
-    initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  } else if (parts.length === 1 && parts[0].length >= 1) {
-    initials = parts[0].substring(0, 2).toUpperCase();
-  }
-
-  document.getElementById('profileModalAvatar').textContent = initials;
-  document.getElementById('profileModalName').textContent = user.username || 'Luke R';
-  document.getElementById('profileModalEmail').textContent = user.email || 'lukeroch38@example.com';
+  document.getElementById('profileModalAvatar').textContent = getInitials(user.userFullname);
+  document.getElementById('profileModalName').textContent = user.userFullname || '';
+  document.getElementById('profileModalEmail').textContent = user.userEmail || '';
 
   const stats = calculateCellarStats(cellar);
+  const totalValue = serverValueCents !== null ? serverValueCents / 100 : stats.totalValue;
   document.getElementById('profileTotalBottles').textContent = `${stats.totalBottles} ${stats.totalBottles === 1 ? 'Bottle' : 'Bottles'}`;
   document.getElementById('profileDistinctLabels').textContent = `${stats.distinctCount} ${stats.distinctCount === 1 ? 'Wine' : 'Wines'}`;
-  document.getElementById('profileCollectionWorth').textContent = `$${stats.totalValue.toLocaleString()}`;
+  document.getElementById('profileCollectionWorth').textContent = `$${totalValue.toLocaleString()}`;
 
   // App Tenure
-  const tenure = getAppTenureDetails(user.memberSince || '2024-10-15');
+  const tenure = getAppTenureDetails(user.userCreatedAt);
   document.getElementById('profileTenureYears').textContent = tenure.tenureString;
   document.getElementById('profileMemberSinceSub').textContent = tenure.memberSinceString;
 
@@ -531,7 +590,7 @@ function openProfileModal() {
     const r = w.region || 'Other';
     regionCounts[r] = (regionCounts[r] || 0) + (Number(w.quantity) || 0);
   });
-  let topRegionName = 'Bordeaux, France';
+  let topRegionName = null;
   let maxCount = 0;
   for (const [r, count] of Object.entries(regionCounts)) {
     if (count > maxCount) {
@@ -539,19 +598,19 @@ function openProfileModal() {
       topRegionName = r;
     }
   }
-  document.getElementById('profileTopRegion').textContent = `${topRegionName} (${maxCount} bottles)`;
+  document.getElementById('profileTopRegion').textContent = topRegionName ? `${topRegionName} (${maxCount} bottles)` : '—';
 
-  // Crown Jewel (highest price bottle)
+  // Crown Jewel (highest valued bottle; wines without a value are skipped)
   let crownJewel = null;
   let maxPrice = -1;
   cellar.forEach(w => {
-    if (Number(w.price) > maxPrice) {
+    if (w.price !== null && Number(w.price) > maxPrice) {
       maxPrice = Number(w.price);
       crownJewel = w;
     }
   });
   if (crownJewel) {
-    document.getElementById('profileCrownJewel').textContent = `${crownJewel.name} ($${Number(crownJewel.price).toLocaleString()})`;
+    document.getElementById('profileCrownJewel').textContent = `${crownJewel.name} (${formatPrice(crownJewel.price)})`;
   } else {
     document.getElementById('profileCrownJewel').textContent = '—';
   }
@@ -560,14 +619,13 @@ function openProfileModal() {
   if (stats.oldestVintage !== '—') {
     const age = new Date().getFullYear() - stats.oldestVintage;
     document.getElementById('profileOldestVintage').textContent = `${stats.oldestVintage} Vintage (${age} Years Old)`;
+  } else {
+    document.getElementById('profileOldestVintage').textContent = '—';
   }
 
-  // Cellar Tasting Journal (Feature 6)
+  // Bottles enjoyed and the tasting journal, from the server
   renderUncorkHistory();
 
-  // Populate edit form
-  document.getElementById('editProfileName').value = user.username || 'Luke R';
-  document.getElementById('editProfileEmail').value = user.email || 'lukeroch38@example.com';
   document.getElementById('profileEditBox').classList.remove('show');
 
   modal.classList.add('open');
@@ -582,37 +640,6 @@ function closeProfileModal() {
   document.body.style.overflow = '';
 }
 
-function saveProfileChanges() {
-  const newName = document.getElementById('editProfileName').value.trim() || 'Luke R';
-  const newEmail = document.getElementById('editProfileEmail').value.trim() || 'lukeroch38@example.com';
-
-  let user = getUserSession() || { memberSince: '2024-10-15' };
-  user.username = newName;
-  user.email = newEmail;
-  if (!user.memberSince) user.memberSince = '2024-10-15';
-
-  saveUserSession(user);
-
-  // Update hero card in real time
-  document.getElementById('heroUserName').textContent = newName;
-  document.getElementById('heroUserEmail').textContent = newEmail;
-
-  const parts = newName.split(/\s+/);
-  let initials = 'LR';
-  if (parts.length >= 2) {
-    initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  } else if (parts.length === 1 && parts[0].length >= 1) {
-    initials = parts[0].substring(0, 2).toUpperCase();
-  }
-  document.getElementById('heroAvatar').textContent = initials;
-  document.getElementById('profileModalAvatar').textContent = initials;
-  document.getElementById('profileModalName').textContent = newName;
-  document.getElementById('profileModalEmail').textContent = newEmail;
-
-  document.getElementById('profileEditBox').classList.remove('show');
-  showToast('✓ Profile updated successfully');
-}
-
 // ----------------------------------------------------
 // WINE OVERVIEW MODAL HANDLERS
 // ----------------------------------------------------
@@ -624,9 +651,9 @@ function openOverview(wineId) {
   const currentYear = new Date().getFullYear();
   const age = getWineAge(wine.vintage);
   const typeClass = (wine.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const priceNum = Number(wine.price) || 0;
   const qtyNum = Number(wine.quantity) || 0;
-  const totalWorth = priceNum * qtyNum;
+  const isValued = wine.price !== null;
+  const totalWorth = isValued ? Number(wine.price) * qtyNum : null;
 
   // Header tags
   const tagEl = document.getElementById('modalWineTypeTag');
@@ -634,7 +661,7 @@ function openOverview(wineId) {
   tagEl.textContent = wine.type;
 
   document.getElementById('modalAgeBadge').textContent = age;
-  document.getElementById('modalMaturityBadge').textContent = wine.maturity || 'Ready to Enjoy';
+  document.getElementById('modalMaturityBadge').textContent = wine.maturity;
 
   // Hero title & region
   document.getElementById('modalWineTitle').textContent = wine.name;
@@ -645,11 +672,21 @@ function openOverview(wineId) {
   document.getElementById('modalTypeVal').textContent = `${wine.type} Wine`;
   document.getElementById('modalVarietalSub').textContent = wine.varietal || 'Single Varietal / Blend';
 
-  document.getElementById('modalWorthVal').innerHTML = `$${priceNum.toLocaleString()} <span style="font-size: 13px; font-family:'Inter'; color:var(--text-muted);">/ bottle</span>`;
-  document.getElementById('modalTotalWorthSub').textContent = `Collection Lot: $${totalWorth.toLocaleString()} total`;
+  if (isValued) {
+    document.getElementById('modalWorthVal').innerHTML = `${escapeHtml(formatPrice(wine.price))} <span style="font-size: 13px; font-family:'Inter'; color:var(--text-muted);">/ bottle</span>`;
+    document.getElementById('modalTotalWorthSub').textContent = `Collection Lot: ${formatPrice(totalWorth)} total`;
+  } else {
+    document.getElementById('modalWorthVal').textContent = 'Not valued';
+    document.getElementById('modalTotalWorthSub').textContent = 'No value recorded yet';
+  }
 
-  document.getElementById('modalVintageVal').textContent = `${wine.vintage} Vintage`;
-  document.getElementById('modalAgeSub').textContent = `${age} (${currentYear - wine.vintage} yrs of cellaring)`;
+  if (wine.vintage) {
+    document.getElementById('modalVintageVal').textContent = `${wine.vintage} Vintage`;
+    document.getElementById('modalAgeSub').textContent = `${age} (${currentYear - wine.vintage} yrs of cellaring)`;
+  } else {
+    document.getElementById('modalVintageVal').textContent = 'NV';
+    document.getElementById('modalAgeSub').textContent = 'Non-vintage blend';
+  }
 
   document.getElementById('modalQtyVal').textContent = qtyNum;
   document.getElementById('modalStockStatus').textContent = qtyNum > 0 ? `${qtyNum} In Cellar` : 'Depleted';
@@ -660,15 +697,16 @@ function openOverview(wineId) {
   if (wine.pairings && wine.pairings.length > 0) {
     pairContainer.innerHTML = wine.pairings.map(p => `<span class="pair-badge">${escapeHtml(p)}</span>`).join('');
   } else {
-    pairContainer.innerHTML = '<span class="pair-badge">Artisanal Cheeses</span><span class="pair-badge">Charcuterie</span>';
+    pairContainer.innerHTML = '<span class="pair-badge">No pairings saved</span>';
   }
 
-  const pairGuide = wine.pairingGuide || `Pairs wonderfully with dishes harmonizing with ${wine.type.toLowerCase()} wine profiles, particularly ${(wine.pairings || ['rich mains']).join(', ')}.`;
+  const pairGuide = wine.pairingGuide || (wine.pairings.length > 0
+    ? `Pairs wonderfully with dishes harmonizing with ${wine.type.toLowerCase()} wine profiles, particularly ${wine.pairings.join(', ')}.`
+    : 'No pairing guide saved yet.');
   document.getElementById('modalPairGuide').textContent = pairGuide;
 
   // Tasting Notes
-  const notes = wine.notes || 'Classic character with beautiful cellar evolution, balanced acidity, and generous aromatic finish.';
-  document.getElementById('modalNotesQuote').textContent = `"${notes}"`;
+  document.getElementById('modalNotesQuote').textContent = wine.notes ? `"${wine.notes}"` : 'No tasting notes yet.';
 
   // Show modal
   const modal = document.getElementById('overviewModal');
@@ -685,55 +723,87 @@ function closeOverview() {
   activeWineId = null;
 }
 
-// Adjust quantity from inside overview
+// Replaces one wine in the local list with the server's updated item.
+function replaceWineFromItem(item) {
+  const updated = toCellarWine(item);
+  const index = cellar.findIndex(w => w.id === updated.id);
+  if (index >= 0) cellar[index] = updated;
+  return updated;
+}
+
+function setQtyButtonsDisabled(disabled) {
+  ['modalIncBtn', 'modalDecBtn', 'uncorkBottleBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = disabled;
+  });
+}
+
+// Adjust quantity from inside overview.
 function adjustWineQty(delta) {
   if (!activeWineId) return;
-  const wine = cellar.find(w => w.id === activeWineId);
+  return changeWineQty(activeWineId, delta);
+}
+
+// Changes a wine's bottle count on the server.
+// −1 records a bottle drunk in the cellar journal; +1 adds a bottle.
+async function changeWineQty(wineId, delta) {
+  if (qtyRequestInFlight) return;
+  const wine = cellar.find(w => w.id === wineId);
   if (!wine) return;
-
-  const currentQty = Number(wine.quantity) || 0;
-  let newQty = currentQty + delta;
-  if (newQty < 0) newQty = 0;
-
-  if (delta < 0) {
-    if (currentQty <= 0) {
-      showToast(`"${wine.name}" is already depleted`);
-      return;
-    }
-    bottlesConsumedCount++;
-    logUncorkEvent(wine);
+  if (delta < 0 && (Number(wine.quantity) || 0) <= 0) {
+    showToast(`"${wine.name}" is already depleted`);
+    return;
   }
 
-  wine.quantity = newQty;
+  qtyRequestInFlight = true;
+  setQtyButtonsDisabled(true);
+  try {
+    let updated;
+    if (delta < 0) {
+      const result = await consumeItem(wine.id, 1);
+      updated = replaceWineFromItem(result.item);
+    } else {
+      updated = replaceWineFromItem(await updateItem(wine.id, { itemQuantity: (Number(wine.quantity) || 0) + 1 }));
+    }
 
-  saveCellar(cellar);
-  updateStats();
-  renderMain();
+    updateStats();
+    renderMain();
+    if (activeWineId === updated.id) openOverview(updated.id);
+    refreshServerValue();
 
-  // Update modal in place
-  openOverview(activeWineId);
-
-  if (delta < 0 && newQty === 0) {
-    showToast(`Finished last bottle of ${wine.name}`);
-  } else if (delta < 0) {
-    showToast(`Enjoy the bottle! ${newQty} bottle(s) remaining.`);
-  } else {
-    showToast(`Added 1 bottle of ${wine.name} (Now ${newQty})`);
+    if (delta < 0 && updated.quantity === 0) {
+      showToast(`Finished last bottle of ${updated.name}`);
+    } else if (delta < 0) {
+      showToast(`Enjoy the bottle! ${updated.quantity} bottle(s) remaining.`);
+    } else {
+      showToast(`Added 1 bottle of ${updated.name} (Now ${updated.quantity})`);
+    }
+  } catch (err) {
+    showToast(firstErrorMessage(err));
+  } finally {
+    qtyRequestInFlight = false;
+    setQtyButtonsDisabled(false);
   }
 }
 
-function deleteActiveWine() {
+async function deleteActiveWine() {
   if (!activeWineId) return;
   const wine = cellar.find(w => w.id === activeWineId);
   if (!wine) return;
 
   if (confirm(`Are you sure you want to remove "${wine.name}" from your cellar collection?`)) {
-    cellar = cellar.filter(w => w.id !== activeWineId);
-    saveCellar(cellar);
+    try {
+      await deleteItem(wine.id);
+    } catch (err) {
+      showToast(firstErrorMessage(err));
+      return;
+    }
+    cellar = cellar.filter(w => w.id !== wine.id);
     updateStats();
     updateRegionFilterChips();
     renderMain();
     closeOverview();
+    refreshServerValue();
     showToast(`Removed "${wine.name}" from cellar`);
   }
 }
@@ -965,49 +1035,107 @@ function closeAddWineModal() {
   modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   document.getElementById('addWineForm').reset();
+  clearAddWineFieldErrors();
   document.querySelectorAll('#formPairChips .select-chip').forEach(c => c.classList.remove('selected'));
 }
 
-function handleAddWineSubmit(e) {
+function clearAddWineFieldErrors() {
+  document.querySelectorAll('#addWineForm input, #addWineForm select, #addWineForm textarea')
+    .forEach(el => el.setCustomValidity(''));
+}
+
+// Shows a message on an Add Wine input using the browser's own validation bubble.
+function showFieldError(inputId, message) {
+  const el = document.getElementById(inputId);
+  if (!el) return false;
+  el.setCustomValidity(message);
+  el.reportValidity();
+  return true;
+}
+
+function isoDateYearsFromToday(years) {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + years);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+async function handleAddWineSubmit(e) {
   e.preventDefault();
+  clearAddWineFieldErrors();
 
   const name = document.getElementById('inputName').value.trim();
   const type = document.getElementById('inputType').value;
   const varietal = document.getElementById('inputVarietal').value.trim();
   const region = document.getElementById('inputRegion').value.trim();
-  const vintage = parseInt(document.getElementById('inputVintage').value, 10);
-  const price = parseFloat(document.getElementById('inputPrice').value) || 0;
-  const quantity = parseInt(document.getElementById('inputQty').value, 10) || 1;
+  const vintageText = document.getElementById('inputVintage').value.trim();
+  const priceText = document.getElementById('inputPrice').value.trim();
+  const quantity = parseInt(document.getElementById('inputQty').value, 10);
   const maturity = document.getElementById('inputMaturity').value;
   const notes = document.getElementById('inputNotes').value.trim();
 
-  // Selected pairing chips
+  // Grape must be one of the server's blends (or left blank)
+  let blendID = null;
+  if (varietal) {
+    const match = blendOptions.find(b => b.blendStyle.toLowerCase() === varietal.toLowerCase());
+    if (!match) {
+      showFieldError('inputVarietal', 'Please pick a grape from the list, or leave it blank.');
+      return;
+    }
+    blendID = match.blendID;
+  }
+
+  // Selected pairing chips (exact server names)
   const selectedPairings = Array.from(document.querySelectorAll('#formPairChips .select-chip.selected'))
     .map(chip => chip.getAttribute('data-val'));
 
-  const newWine = {
-    id: 'wine_' + Date.now(),
-    name,
-    type,
-    varietal: varietal || (type + ' Wine'),
-    region,
-    vintage: vintage || new Date().getFullYear(),
-    price: Math.round(price),
-    quantity: quantity > 0 ? quantity : 1,
-    maturity,
-    pairings: selectedPairings.length > 0 ? selectedPairings : ['Cheese', 'Charcuterie'],
-    notes: notes || 'Recently added cellar acquisition with superb aging potential.',
-    pairingGuide: `Pairs beautifully with dishes that elevate ${type.toLowerCase()} wine, such as ${(selectedPairings.length ? selectedPairings : ['fine meats and cheeses']).join(', ')}.`
+  const body = {
+    itemQuantity: isNaN(quantity) ? null : quantity,
+    wine: {
+      wineName: name,
+      wineType: type,
+      wineRegion: region || null,
+      wineVint: vintageText === '' ? null : Number(vintageText),
+      wineValue: priceText === '' ? null : priceText,
+      wineDescription: notes || null,
+      blendID,
+      pairings: selectedPairings
+    }
   };
+  const offsets = DRINK_WINDOW_OFFSETS[maturity];
+  if (offsets) {
+    body.itemDrinkFrom = isoDateYearsFromToday(offsets.fromYears);
+    body.itemDrinkBy = isoDateYearsFromToday(offsets.byYears);
+  }
 
-  cellar.unshift(newWine);
-  saveCellar(cellar);
-  updateStats();
-  updateRegionFilterChips();
-  renderMain();
-  closeAddWineModal();
-
-  showToast(`✓ Added "${newWine.name}" to your cellar!`);
+  const submitBtn = document.querySelector('#addWineForm button[type="submit"]');
+  submitBtn.disabled = true;
+  try {
+    const item = await addItem(collectionId, body);
+    const newWine = toCellarWine(item);
+    cellar.unshift(newWine);
+    updateStats();
+    updateRegionFilterChips();
+    renderMain();
+    closeAddWineModal();
+    refreshServerValue();
+    showToast(`✓ Added "${newWine.name}" to your cellar!`);
+  } catch (err) {
+    // Keep the modal open with the user's input; point at the first bad field.
+    let shown = false;
+    if (err.fields) {
+      for (const [field, message] of Object.entries(err.fields)) {
+        if (FIELD_INPUTS[field] && showFieldError(FIELD_INPUTS[field], message)) {
+          shown = true;
+          break;
+        }
+      }
+    }
+    showToast(firstErrorMessage(err));
+    if (!shown) document.getElementById('inputName').focus();
+  } finally {
+    submitBtn.disabled = false;
+  }
 }
 
 // ----------------------------------------------------
@@ -1126,12 +1254,20 @@ function getSommelierRationale(wine, foodCategories, occasion, mealText) {
   return `${pairingLogic} ${occasionLogic}${guideSnippet}`;
 }
 
+// True when the server says this wine should be drunk now or soon.
+function isDrinkNow(w) {
+  const status = w._item ? w._item.drinkStatus : null;
+  return status === 'ready' || status === 'drinkSoon' || status === 'pastPeak';
+}
+
 function calculateWineRecommendation(mealText, foodCategories, occasion) {
-  if (!cellar || cellar.length === 0) return null;
+  // Only recommend bottles still in the cellar (the list includes finished ones).
+  const available = (cellar || []).filter(w => (Number(w.quantity) || 0) > 0);
+  if (available.length === 0) return null;
 
   const lowerMeal = (mealText || '').toLowerCase();
 
-  const scored = cellar.map(w => {
+  const scored = available.map(w => {
     let score = 20; // baseline
     const winePairings = (w.pairings || []).map(p => p.toLowerCase());
 
@@ -1154,14 +1290,14 @@ function calculateWineRecommendation(mealText, foodCategories, occasion) {
     // 3. Occasion matching
     if (occasion.includes('Celebration')) {
       if (w.type === 'Sparkling') score += 35;
-      if (w.price >= 150) score += 25;
+      if (w.price !== null && w.price >= 150) score += 25;
       if (w.vintage && w.vintage <= 2015) score += 15;
     } else if (occasion.includes('Romantic')) {
       if (w.type === 'Red' || w.type === 'Sparkling') score += 20;
-      if (w.maturity === 'Peak Maturity') score += 15;
+      if (isDrinkNow(w)) score += 15;
     } else if (occasion.includes('Casual')) {
-      if (w.price <= 50) score += 25;
-      if (w.maturity === 'Ready to Enjoy') score += 15;
+      if (w.price !== null && w.price <= 50) score += 25;
+      if (isDrinkNow(w)) score += 15;
     } else if (occasion.includes('Dinner Party')) {
       if (w.quantity >= 2) score += 20;
     }
@@ -1170,7 +1306,7 @@ function calculateWineRecommendation(mealText, foodCategories, occasion) {
     if (w.quantity > 0) score += 15;
 
     // 5. Maturity suitability bonus
-    if (w.maturity === 'Peak Maturity' || w.maturity === 'Ready to Enjoy') {
+    if (isDrinkNow(w)) {
       score += 10;
     }
 
@@ -1224,12 +1360,12 @@ function renderRecommendationResult(data) {
         </div>
         <div class="rec-alternative-card">
           <div>
-            <div style="color: #fff; font-size: 14px; font-weight: 500;">${escapeHtml(alt.name)} (${alt.vintage})</div>
+            <div style="color: #fff; font-size: 14px; font-weight: 500;">${escapeHtml(alt.name)} (${formatVintage(alt.vintage)})</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              ${escapeHtml(alt.varietal)} • ${escapeHtml(alt.type)} • $${Number(alt.price).toLocaleString()}
+              ${escapeHtml(alt.varietal)} • ${escapeHtml(alt.type)} • ${escapeHtml(formatPrice(alt.price))}
             </div>
           </div>
-          <button type="button" class="btn-ghost" style="padding: 6px 14px; font-size: 12px;" onclick="switchRecommendedWine('${alt.id}')">
+          <button type="button" class="btn-ghost" style="padding: 6px 14px; font-size: 12px;" onclick="switchRecommendedWine(${Number(alt.id)})">
             Switch to This
           </button>
         </div>
@@ -1463,23 +1599,9 @@ function setupFilters() {
     });
   });
 
-  // Food Pairing Chips
-  document.querySelectorAll('#pairChipRow .chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#pairChipRow .chip').forEach(c => c.classList.remove('gold-active', 'active'));
-      const pair = chip.getAttribute('data-pair');
-      activePairFilter = pair;
-      chip.classList.add('gold-active');
-      updateFilterButtonState();
-      renderMain();
-    });
-  });
-
-  // Form pairing chips toggle in Add Wine dialog
-  document.querySelectorAll('#formPairChips .select-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chip.classList.toggle('selected');
-    });
+  // Add Wine inputs: clear a server error message as soon as the user edits
+  document.querySelectorAll('#addWineForm input, #addWineForm select, #addWineForm textarea').forEach(el => {
+    el.addEventListener('input', () => el.setCustomValidity(''));
   });
 
   // Region View Toggle Button
@@ -1603,15 +1725,127 @@ function setupSortControls() {
 }
 
 // ----------------------------------------------------
+// PAIRING CHIPS & GRAPE SUGGESTIONS FROM THE SERVER
+// ----------------------------------------------------
+// "SpicyFood" or "Spicy Food" -> "Spicy Food"
+function friendlyPairingLabel(name) {
+  return String(name).replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
+function buildPairingChips(pairings) {
+  const names = pairings.map(p => p.pairingName);
+
+  // Filter bar: keep the "All" chip, add one per server pairing
+  const filterRow = document.getElementById('pairChipRow');
+  if (filterRow) {
+    filterRow.innerHTML = `<button type="button" class="chip gold-active" data-pair="All">All</button>` +
+      names.map(n => `<button type="button" class="chip" data-pair="${escapeHtml(n)}">${escapeHtml(friendlyPairingLabel(n))}</button>`).join('');
+    filterRow.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        filterRow.querySelectorAll('.chip').forEach(c => c.classList.remove('gold-active', 'active'));
+        activePairFilter = chip.getAttribute('data-pair');
+        chip.classList.add('gold-active');
+        updateFilterButtonState();
+        renderMain();
+      });
+    });
+  }
+
+  // Add Wine form: toggle chips, sending the exact server name
+  const formChips = document.getElementById('formPairChips');
+  if (formChips) {
+    formChips.innerHTML = names.map(n => `<span class="select-chip" data-val="${escapeHtml(n)}">${escapeHtml(friendlyPairingLabel(n))}</span>`).join('');
+    formChips.querySelectorAll('.select-chip').forEach(chip => {
+      chip.addEventListener('click', () => chip.classList.toggle('selected'));
+    });
+  }
+}
+
+function buildBlendSuggestions(blends) {
+  blendOptions = blends;
+  const list = document.getElementById('blendOptions');
+  if (list) list.innerHTML = blends.map(b => `<option value="${escapeHtml(b.blendStyle)}"></option>`).join('');
+}
+
+// Shows a friendly message in the grid when the cellar can't load.
+function showLoadError(message) {
+  document.getElementById('gridCountDisplay').textContent = 'Your cellar could not be loaded';
+  document.getElementById('bottleGrid').innerHTML = `
+    <div class="empty-state">
+      <h3>Something went wrong</h3>
+      <p>${escapeHtml(message)}</p>
+      <button class="btn-ghost" onclick="window.location.reload()">Try Again</button>
+    </div>
+  `;
+}
+
+// Loads the user, their cellar, and reference data from the server.
+async function loadDashboardData() {
+  try {
+    const me = await getMe();
+    currentUser = me.user;
+    const collection = (me.collections || [])[0];
+    if (!collection) {
+      showLoadError("You don't have a cellar yet.");
+      return;
+    }
+    collectionId = collection.collectionId;
+    initUserCard();
+
+    const [itemsData, pairingsData, blendsData] = await Promise.all([
+      listItems(collectionId, true),
+      getPairings(),
+      getBlends()
+    ]);
+    cellar = itemsData.items.map(toCellarWine);
+    buildPairingChips(pairingsData.pairings);
+    buildBlendSuggestions(blendsData.blends);
+
+    updateStats();
+    updateRegionFilterChips();
+    renderMain();
+    refreshServerValue();
+  } catch (err) {
+    showLoadError(err.message || "Can't reach the Vino server. Is the backend running?");
+  }
+}
+
+// Hero card: name, email, initials
+function initUserCard() {
+  const nameEl = document.getElementById('heroUserName');
+  const emailEl = document.getElementById('heroUserEmail');
+  const avatarEl = document.getElementById('heroAvatar');
+  if (nameEl) nameEl.textContent = currentUser.userFullname;
+  if (emailEl) emailEl.textContent = currentUser.userEmail;
+  if (avatarEl) avatarEl.textContent = getInitials(currentUser.userFullname);
+}
+
+// Logs out on the server, then goes to the login page even if that failed.
+async function signOut(e) {
+  e.preventDefault();
+  try {
+    await logout();
+  } catch (err) {
+    // Going to the login page anyway; the session expires on its own.
+  }
+  window.location.href = 'login.html';
+}
+
+// ----------------------------------------------------
 // INITIALIZATION
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  cellar = loadCellar();
-  updateStats();
+  if (isOpenedAsFile()) return;
+
   setupFilters();
   setupSortControls();
-  updateRegionFilterChips();
-  renderMain();
+  loadDashboardData();
+
+  // Sign out: end the session on the server first
+  ['signOutBtn', 'profileSignOutBtn'].forEach(id => {
+    const link = document.getElementById(id);
+    if (link) link.addEventListener('click', signOut);
+  });
 
   // Wire User Profile Button (Right-hand hero card)
   const userCardBtn = document.getElementById('userCardBtn');
@@ -1636,9 +1870,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('profileEditBox').classList.remove('show');
     });
   }
-
-  const saveProfileBtn = document.getElementById('saveProfileBtn');
-  if (saveProfileBtn) saveProfileBtn.addEventListener('click', saveProfileChanges);
 
   // Wire Action Dropdown Menu (Add Wine, Recommend a Wine, Scan Barcode)
   const actionDropdownBtn = document.getElementById('actionDropdownBtn');
@@ -1868,34 +2099,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-
-  // Load initial user session
-  (function initUserSession() {
-    try {
-      const user = getUserSession();
-      if (user) {
-        const nameEl = document.getElementById('heroUserName');
-        const emailEl = document.getElementById('heroUserEmail');
-        const avatarEl = document.getElementById('heroAvatar');
-
-        if (user.username && nameEl) {
-          nameEl.textContent = user.username;
-          const parts = user.username.trim().split(/\s+/);
-          let initials = 'LR';
-          if (parts.length >= 2) {
-            initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-          } else if (parts.length === 1 && parts[0].length >= 1) {
-            initials = parts[0].substring(0, 2).toUpperCase();
-          }
-          if (avatarEl) avatarEl.textContent = initials;
-        }
-
-        if (user.email && emailEl) {
-          emailEl.textContent = user.email;
-        }
-      }
-    } catch (err) {
-      console.warn('Session load error:', err);
-    }
-  })();
 });

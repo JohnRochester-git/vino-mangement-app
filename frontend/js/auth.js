@@ -3,6 +3,8 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (isOpenedAsFile()) return;
+
   // ---- DOM Elements ----
   const form = document.getElementById('loginForm');
   const usernameInput = document.getElementById('usernameInput');
@@ -28,15 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---- Auth Mode State ----
   let isSignUpMode = false;
 
-  // ---- Simple password hashing (SHA-256 via SubtleCrypto) ----
-  async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
   // ---- Toggle between Sign In / Create Account ----
   function setupAuthToggle() {
     toggleAuthMode.addEventListener('click', function (e) {
@@ -60,9 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cardHeaderLabel.textContent = 'Sign in to your cellar';
         btnText.textContent = 'Sign In to Cellar';
         authToggle.innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthMode">Create one</a>';
-        usernameLabel.textContent = 'USERNAME OR EMAIL';
-        usernameInput.placeholder = 'Your username';
-        usernameInput.type = 'text';
+        usernameLabel.textContent = 'EMAIL';
+        usernameInput.placeholder = 'you@email.com';
+        usernameInput.type = 'email';
         passwordLabel.textContent = 'PASSWORD';
         passwordInput.placeholder = '••••••••••••';
         nameRow.classList.remove('visible');
@@ -110,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---- Alert Helpers ----
   function showAlert(msg, type = 'error') {
     alertBanner.className = 'alert-banner ' + type;
+    alertBanner.style.display = '';
     alertText.textContent = msg;
   }
 
@@ -118,11 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
     alertBanner.style.display = 'none';
   }
 
-  // ---- Pre-fill remembered username ----
-  const savedUser = getUserSession();
-  if (savedUser && savedUser.username) {
-    usernameInput.value = savedUser.username;
-  }
+  // ---- Already logged in? Skip straight to the welcome page ----
+  getMe()
+    .then(() => { window.location.href = 'welcome.html'; })
+    .catch((err) => {
+      if (err.status !== 401) showAlert(err.message);
+    });
 
   // ---- Reset Button State Helper ----
   function resetButton() {
@@ -157,13 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!username) {
-      showAlert(isSignUpMode ? 'Please enter your email.' : 'Please enter your username.');
+      showAlert('Please enter your email.');
       usernameInput.focus();
       return;
     }
 
-    // Email format check during sign-up
-    if (isSignUpMode && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) {
+    // Email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) {
       showAlert('Please enter a valid email address.');
       usernameInput.focus();
       return;
@@ -175,8 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (password.length < 4) {
-      showAlert('Password must be at least 4 characters.');
+    if (password.length < 8) {
+      showAlert('Password must be at least 8 characters.');
       passwordInput.focus();
       return;
     }
@@ -187,91 +182,22 @@ document.addEventListener('DOMContentLoaded', () => {
     arrowIcon.style.display = 'none';
     btnText.textContent = isSignUpMode ? 'Creating account...' : 'Authenticating...';
 
-    const passwordHash = await hashPassword(password);
-    const accounts = getAccounts();
-
-    // UX delay
-    setTimeout(function () {
+    try {
       if (isSignUpMode) {
-        // ---- REGISTRATION ----
-        const email = username.toLowerCase();
-        const exists = accounts.find(a => a.email.toLowerCase() === email);
-        if (exists) {
-          showAlert('An account with that email already exists. Please sign in instead.');
-          resetButton();
-          return;
-        }
-
-        const displayName = firstName + ' ' + lastName;
-
-        accounts.push({
-          username: displayName,
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          passwordHash: passwordHash
-        });
-        saveAccounts(accounts);
-
-        // Create session and seed default cellar
-        const session = {
-          username: displayName,
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          memberSince: new Date().toISOString().split('T')[0],
-          loginTime: new Date().toISOString()
-        };
-        saveUserSession(session);
-        loadCellar(); // Ensure default cellar exists
-
+        await signup(username, password, firstName, lastName);
         showAlert('Account created! Welcome, ' + firstName + '. Opening your cellar...', 'success');
-        btnText.textContent = 'Redirecting...';
-
-        setTimeout(function () {
-          window.location.href = 'welcome.html';
-        }, 700);
-
       } else {
-        // ---- LOGIN ----
-        const loginQuery = username.toLowerCase();
-        const account = accounts.find(a =>
-          a.email.toLowerCase() === loginQuery ||
-          a.username.toLowerCase() === loginQuery
-        );
-
-        if (!account) {
-          showAlert('No account found. Please create an account first.');
-          resetButton();
-          return;
-        }
-
-        if (account.passwordHash !== passwordHash) {
-          showAlert('Incorrect password. Please try again.');
-          resetButton();
-          return;
-        }
-
-        // Successful login — create session
-        const session = {
-          username: account.username,
-          email: account.email,
-          firstName: account.firstName || '',
-          lastName: account.lastName || '',
-          memberSince: account.memberSince || '2024-10-15',
-          loginTime: new Date().toISOString()
-        };
-        saveUserSession(session);
-        loadCellar(); // Ensure default cellar exists
-
-        showAlert('Welcome back, ' + account.username + '. Opening your cellar...', 'success');
-        btnText.textContent = 'Redirecting...';
-
-        setTimeout(function () {
-          window.location.href = 'welcome.html';
-        }, 700);
+        const me = await login(username, password);
+        showAlert('Welcome back, ' + me.user.userFname + '. Opening your cellar...', 'success');
       }
-    }, 600);
+      btnText.textContent = 'Redirecting...';
+      window.location.href = 'welcome.html';
+    } catch (err) {
+      // 401 wrong email/password, 409 email taken, 429 locked out: message is
+      // written for users. 400: show the first field's message.
+      showAlert(err.status === 400 ? firstErrorMessage(err) : err.message);
+      resetButton();
+    }
   });
 
   setupAuthToggle();
