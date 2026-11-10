@@ -1,4 +1,4 @@
-import { Container, ContainerProxy, getContainer } from "@cloudflare/containers";
+import { Container, ContainerProxy, getRandom } from "@cloudflare/containers";
 
 export { ContainerProxy };
 
@@ -60,7 +60,7 @@ export default {
         const url = new URL(request.url);
 
         if (url.pathname.startsWith("/api/") || url.pathname === "/health") {
-            return getContainer(env.BACKEND).fetch(request);
+            return (await getRandom(env.BACKEND, 2)).fetch(request);
         }
 
         return env.ASSETS.fetch(request);
