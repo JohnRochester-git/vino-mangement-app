@@ -1,0 +1,80 @@
+# Nightly backup of the live database (vino-db) to the vino-backups R2 bucket.
+# Runs every night, and can be started by hand from the Actions tab.
+#
+# Needs two repository secrets:
+#   CLOUDFLARE_API_TOKEN   token with D1 Edit and Workers R2 Storage Edit only
+#   CLOUDFLARE_ACCOUNT_ID  the Cloudflare account ID
+
+name: Nightly D1 backup
+
+on:
+  schedule:
+    # 07:00 UTC every day (1-2 a.m. US Central). Scheduled runs only fire
+    # from the default branch (main), and can start a few minutes late.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+# Read-only access to the repo; the job only needs to check out the code.
+permissions:
+  contents: read
+
+# Never run two backups at once.
+concurrency:
+  group: d1-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      # Installs the pinned Wrangler from worker/package-lock.json.
+      - name: Install Wrangler
+        run: npm ci
+
+      # The file name holds the UTC date and time, so a manual run on the
+      # same day doesn't overwrite the nightly one.
+      # Wrangler prints a one-hour download link for the whole database.
+      # Run logs can be public, so links are stripped before printing.
+      - name: Export vino-db
+        run: |
+          STAMP=$(date -u +%Y-%m-%dT%H%MZ)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          set +e
+          OUTPUT=$(npx wrangler d1 export vino-db --remote --env="" \
+            --output "$RUNNER_TEMP/vino-db-$STAMP.sql" 2>&1)
+          STATUS=$?
+          set -e
+          echo "$OUTPUT" | sed -E 's#https?://[^[:space:]]+#[link removed]#g'
+          exit $STATUS
+
+      # Fail the run if the export came back empty, so a broken backup
+      # shows up as a failed run instead of an empty file in R2.
+      - name: Check the export isn't empty
+        run: |
+          FILE="$RUNNER_TEMP/vino-db-$STAMP.sql"
+          test -s "$FILE"
+          echo "Export size: $(wc -c < "$FILE") bytes"
+
+      - name: Upload to R2
+        run: |
+          npx wrangler r2 object put "vino-backups/vino-db/$STAMP.sql" \
+            --file "$RUNNER_TEMP/vino-db-$STAMP.sql" \
+            --content-type application/sql \
+            --remote
