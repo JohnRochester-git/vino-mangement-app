@@ -13,7 +13,16 @@ from ..auth import current_user, login_required
 from ..errors import Conflict
 from ..services import drink_window
 from ..util import json_body, now_iso
-from ..validation import Field, int_range, past_timestamp, quantity, query_param, rating, text, validate
+from ..validation import (
+    Field,
+    int_range,
+    past_timestamp,
+    quantity,
+    query_param,
+    rating,
+    text,
+    validate,
+)
 from .items import get_item_json, item_json, load_items
 
 bp = Blueprint("consumption", __name__)
