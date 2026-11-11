@@ -1,0 +1,112 @@
+# Checks every pull request and every push to main.
+# Four jobs run in parallel; a pull request can merge only when all pass
+# (once branch protection requires them, Task 3.5).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only access to the repo.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend: lint with ruff, then run the tests.
+  # ---------------------------------------------------------------------------
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Test (pytest)
+        run: pytest -q
+
+  # ---------------------------------------------------------------------------
+  # Worker and frontend: syntax check, then a Wrangler dry run.
+  # ---------------------------------------------------------------------------
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - name: Install Worker packages
+        working-directory: worker
+        run: npm ci
+
+      - name: Syntax-check JavaScript
+        run: |
+          for f in worker/src/*.js frontend/js/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Dry-run the deploy
+        working-directory: worker
+        run: npx wrangler deploy --dry-run --env="" --containers-rollout=none
+
+  # ---------------------------------------------------------------------------
+  # Secrets: scan the whole git history for leaked keys or passwords.
+  # ---------------------------------------------------------------------------
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, not just the latest commit
+      - name: Scan for secrets (Gitleaks)
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      pull-requests: read
+
+  # ---------------------------------------------------------------------------
+  # Image: build the backend container, then scan it with Trivy.
+  # ---------------------------------------------------------------------------
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the backend image
+        run: docker build -t vino-backend:${{ github.sha }} backend
+
+      - name: Scan the image (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: vino-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
