@@ -2,7 +2,6 @@
 drink some, read the value. Runs against local SQLite and through the D1
 bridge contract (using the fake bridge)."""
 
-import pytest
 
 from vino import create_app
 from vino.migrate import apply_migrations

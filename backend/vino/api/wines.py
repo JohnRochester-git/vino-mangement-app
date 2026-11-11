@@ -15,7 +15,16 @@ from ..errors import Conflict, NotFound, ValidationError
 from ..services import barcode as barcode_service
 from ..util import json_body, money_fields, now_iso
 from ..validation import (
-    Field, FieldError, barcode, money, name_list, positive_id, text, validate, vintage, wine_type,
+    Field,
+    FieldError,
+    barcode,
+    money,
+    name_list,
+    positive_id,
+    text,
+    validate,
+    vintage,
+    wine_type,
 )
 
 bp = Blueprint("wines", __name__)

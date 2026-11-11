@@ -109,8 +109,9 @@ def test_ready_list_groups(frank):
     add_item(frank, **base, itemDrinkFrom="2020-01-01", itemDrinkBy="2099-01-01")   # ready
     add_item(frank, **base, itemDrinkFrom="2020-01-01", itemDrinkBy="2021-01-01")   # pastPeak
     add_item(frank, **base, itemDrinkFrom="2090-01-01", itemDrinkBy="2099-01-01")   # tooYoung
-    from vino.util import today
     from datetime import timedelta
+
+    from vino.util import today
     soon = (today() + timedelta(days=30)).isoformat()
     sooner = (today() + timedelta(days=10)).isoformat()
     add_item(frank, **base, itemDrinkFrom="2020-01-01", itemDrinkBy=soon)

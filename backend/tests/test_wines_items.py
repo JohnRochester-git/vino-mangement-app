@@ -195,7 +195,9 @@ def test_list_items_filters_and_sorting(frank):
     add_item(frank, wine={"wineName": "Josh Cellars Craftsman", "wineType": "Red", "wineVint": 2020, "wineValue": 22},
              itemDrinkFrom="2020-01-01", itemDrinkBy="2099-01-01")
     base = f"/api/v1/collections/{frank.collection_id}/items"
-    names = lambda q: [i["wine"]["wineName"] for i in frank.get(base + q).get_json()["items"]]
+    def names(q):
+        return [i["wine"]["wineName"] for i in frank.get(base + q).get_json()["items"]]
+    
     assert names("") == ["Chablis Grand Cru", "Château Margaux", "Josh Cellars Craftsman"]
     assert names("?type=White") == ["Chablis Grand Cru"]
     assert names("?region=burgundy") == ["Chablis Grand Cru"]

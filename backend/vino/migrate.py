@@ -41,7 +41,7 @@ def split_statements(sql):
             if buf.strip():
                 statements.append(buf.strip())
             buf = ""
-    leftover = "\n".join(l for l in buf.splitlines() if not l.strip().startswith("--")).strip()
+    leftover = "\n".join(line for line in buf.splitlines() if not line.strip().startswith("--")).strip()
     if leftover:
         raise ValueError(f"Incomplete SQL statement at end of file: {leftover[:80]}")
     return statements

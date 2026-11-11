@@ -16,7 +16,16 @@ from ..auth import current_user, login_required
 from ..errors import APIError, ValidationError
 from ..services import drink_window
 from ..util import now_iso
-from ..validation import Field, check_window, iso_date, money, past_date, quantity, text, validate
+from ..validation import (
+    Field,
+    check_window,
+    iso_date,
+    money,
+    past_date,
+    quantity,
+    text,
+    validate,
+)
 from .items import load_items
 from .wines import WINE_SPEC
 

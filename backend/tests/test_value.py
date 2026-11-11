@@ -1,4 +1,4 @@
-from .conftest import add_item, signup
+from .conftest import add_item
 
 
 def test_value_summary_and_gain_loss(frank):
