@@ -4,8 +4,10 @@
     python3 scripts/smoke_test.py https://vino.noahvastola.workers.dev --version <worker-version-id>
 
 Checks that the pages load, the backend answers and it can reach the database.
-With --version, also checks that the answers come from that Worker version
-(the X-Vino-Version header the Worker adds).
+With --version, also checks that the health check and API answers come from
+that Worker version (the X-Vino-Version header the Worker adds). Pages are
+served by Cloudflare without running the Worker, so they don't carry it.
+
 
 A new deploy can take a few minutes while the container starts, so it retries
 until every check passes or --timeout seconds have gone by.
@@ -48,8 +50,8 @@ def run_checks(base, version):
     """Runs every check once. Returns a list of (name, passed, detail)."""
     results = []
 
-    def check(name, passed, detail, headers):
-        if version and passed:
+    def check(name, passed, detail, headers, versioned=True):
+        if version and versioned and passed:
             answered_by = headers.get("X-Vino-Version")
             if answered_by != version:
                 passed = False
@@ -60,20 +62,24 @@ def run_checks(base, version):
     check("health check", status == 200 and text.strip() == "OK", f"{status} {text.strip()[:40]}", headers)
 
     status, headers, text = fetch(base + "/login")
-    check("login page", status == 200 and "<form" in text, f"{status}", headers)
+    check("login page", status == 200 and "<form" in text, f"{status}", headers, versioned=False)
 
     status, headers, text = fetch(base + "/api/v1/auth/me")
     code = error_code(text)
     check("API reachable", status == 401 and code == "not_authenticated", f"{status} {code}", headers)
 
     # A made-up account: the backend has to look it up in D1 to say "no match".
+    # After 5 failed logins it says "too many attempts" instead, which also
+    # comes from a D1 query, so either answer proves the database is reachable.
     status, headers, text = fetch(
         base + "/api/v1/auth/login",
         method="POST",
         body={"userEmail": "smoke-test@example.invalid", "password": "not-a-real-password"},
     )
     code = error_code(text)
-    check("database reachable", status == 401 and code == "invalid_credentials", f"{status} {code}", headers)
+
+    reached_db = (status, code) in [(401, "invalid_credentials"), (429, "too_many_attempts")]
+    check("database reachable", reached_db, f"{status} {code}", headers)
 
     return results
 
