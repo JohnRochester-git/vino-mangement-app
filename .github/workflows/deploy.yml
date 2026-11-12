@@ -1,0 +1,111 @@
+# Deploys the Worker and backend container to Cloudflare after CI passes on main.
+# Smoke-tests the live site and rolls back to the previous version if it fails.
+# Can also be started by hand from the Actions tab.
+#
+# Needs two repository secrets:
+#   CF_DEPLOY_TOKEN        token with Workers Scripts Edit, Containers Edit,
+#                          D1 Read and Account Settings Read only
+#   CLOUDFLARE_ACCOUNT_ID  the Cloudflare account ID
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancel one halfway through.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # The site the smoke test checks. Change to https://www.vinowine.org once
+  # the custom domain is attached.
+  SITE_URL: https://vino.noahvastola.workers.dev
+
+jobs:
+  deploy:
+    # Only after a successful CI run on a push to main, or when started by hand.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # to push the version tag
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_DEPLOY_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+      # The exact commit CI tested (for a manual run, the latest on main).
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install Wrangler
+        working-directory: worker
+        run: npm ci
+
+      # Remembered so a failed smoke test can roll back to it.
+      - name: Record the live version
+        id: before
+        working-directory: worker
+        run: |
+          VERSION=$(npx wrangler deployments status --env="" --json | jq -r '.versions | max_by(.percentage) | .version_id')
+          echo "Live version before deploy: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Builds the backend image with Docker (preinstalled on the runner),
+      # pushes it to Cloudflare, and uploads the Worker.
+      - name: Deploy
+        id: deploy
+        working-directory: worker
+        run: |
+          npx wrangler deploy --env="" \
+            --message "Deploy ${DEPLOY_SHA::7} (run ${{ github.run_number }})"
+
+      - name: Record the new version
+        id: after
+        working-directory: worker
+        run: |
+          VERSION=$(npx wrangler deployments status --env="" --json | jq -r '.versions | max_by(.percentage) | .version_id')
+          echo "Live version after deploy: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Retries for up to 5 minutes while the new container starts.
+      - name: Smoke test
+        run: python3 scripts/smoke_test.py "$SITE_URL" --version "${{ steps.after.outputs.version }}"
+
+      # Only when the deploy went out but something after it failed.
+      - name: Roll back
+        if: failure() && steps.deploy.outcome == 'success' && steps.before.outputs.version != ''
+        working-directory: worker
+        run: |
+          echo "Rolling back to ${{ steps.before.outputs.version }}"
+          npx wrangler rollback "${{ steps.before.outputs.version }}" --env="" --yes \
+            --message "Smoke test failed for ${{ steps.after.outputs.version }}"
+
+      # Tags the deployed commit, e.g. v1.0.12. Tags aren't blocked by
+      # branch protection, unlike a version-bump commit to main.
+      - name: Tag the release
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          git tag "$TAG" "$DEPLOY_SHA"
+          git push origin "$TAG"
+          echo "Tagged $DEPLOY_SHA as $TAG"
