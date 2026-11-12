@@ -55,14 +55,21 @@ async function handleD1Bridge(request, env) {
     }
 }
 
+function withVersion(response, env) {
+    const tagged = new Response(response.body, response);
+    tagged.headers.set("X-Vino-Version", env.CF_VERSION.id);
+    return tagged;
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
 
         if (url.pathname.startsWith("/api/") || url.pathname === "/health") {
-            return (await getRandom(env.BACKEND, 2)).fetch(request);
+            const container = await getRandom(env.BACKEND, 2);
+            return withVersion(await container.fetch(request), env);
         }
 
-        return env.ASSETS.fetch(request);
+        return withVersion(await env.ASSETS.fetch(request), env);
     },
 };
