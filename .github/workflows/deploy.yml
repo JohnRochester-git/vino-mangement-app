@@ -28,9 +28,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # The site the smoke test checks. Change to https://www.vinowine.org once
-  # the custom domain is attached.
-  SITE_URL: https://vino.noahvastola.workers.dev
+  # The site the smoke test checks.
+  SITE_URL: https://www.vinowine.org
 
 jobs:
   deploy:
