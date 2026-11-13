@@ -39,8 +39,6 @@
     // using the TEST database, for drills and risky changes.
     // Environments don't inherit bindings or containers, so they're repeated here.
     "preview": {
-<<<<<<< Updated upstream
-=======
       // No routes: the preview must never take over www.vinowine.org.
       "routes": [],
 
@@ -48,7 +46,6 @@
       // once "routes" are set, which broke deploy run 6.
       "workers_dev": true,
 
->>>>>>> Stashed changes
       "version_metadata": { "binding": "CF_VERSION" },
       "containers": [
         // 2, because the Worker code always picks between 2 instances.
