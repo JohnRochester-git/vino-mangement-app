@@ -1,44 +1,60 @@
 {
-    "version_metadata": { "binding": "CF_VERSION" },
-	"$schema": "node_modules/wrangler/config-schema.json",
-    "name": "vino",
-    "main": "src/index.js",
-    "compatibility_date": "2026-11-09",
-    "observability": { "enabled": true },
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vino",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-09",
+  "observability": { "enabled": true },
 
-    "assets": { "directory": "../frontend", "binding": "ASSETS" },
+  // Lets the Worker read its own version ID (sent as X-Vino-Version).
+  "version_metadata": { "binding": "CF_VERSION" },
 
-    "containers": [
-        { "class_name": "Backend", "image": "../backend/Dockerfile", "max_instances": 3}
-    ],
+  // Only files in frontend/ are published as the website.
+  "assets": { "directory": "../frontend", "binding": "ASSETS" },
 
-    "durable_objects": {
-        "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
-    },
+  // The backend container, built from backend/Dockerfile.
+  "containers": [
+    { "class_name": "Backend", "image": "../backend/Dockerfile", "max_instances": 3 }
+  ],
 
-    "exports": {
-        "Backend": { "type": "durable-object", "storage": "sqlite" }
-    },
+  // Each container instance is managed by a Durable Object of class Backend.
+  "durable_objects": {
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+  },
+  "exports": {
+    "Backend": { "type": "durable-object", "storage": "sqlite" }
+  },
 
-    "d1_databases": [
-        {
-            "binding": "DB",
-            "database_name": "vino-db",
-            "database_id": "06bf3b5f-526d-496a-a812-c28cca7f55a3",
-            "migrations_dir": "../backend/migrations",
-        }
-    ],
-
-    "env": { 
-        "preview": {
-            "d1_databases": [
-                { 
-                    "binding": "DB",    
-                    "database_name": "vino-db-test", 
-                    "database_id": "953ff089-31d0-4ac5-9f6e-e799b7dbd392",
-                    "migrations_dir": "../backend/migrations"
-                }
-            ]
-        }
+  // The live database. The code reaches it as env.DB.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vino-db",
+      "database_id": "06bf3b5f-526d-496a-a812-c28cca7f55a3",
+      "migrations_dir": "../backend/migrations"
     }
+  ],
+
+  "env": {
+    // A separate copy of the app on vino-preview.<subdomain>.workers.dev,
+    // using the TEST database, for drills and risky changes.
+    // Environments don't inherit bindings or containers, so they're repeated here.
+    "preview": {
+      "version_metadata": { "binding": "CF_VERSION" },
+      "containers": [
+        // 2, because the Worker code always picks between 2 instances.
+        { "class_name": "Backend", "image": "../backend/Dockerfile", "max_instances": 2 }
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "vino-db-test",
+          "database_id": "953ff089-31d0-4ac5-9f6e-e799b7dbd392",
+          "migrations_dir": "../backend/migrations"
+        }
+      ]
+    }
+  }
 }
