@@ -1,5 +1,8 @@
 # Deploys the Worker and backend container to Cloudflare after CI passes on main.
-# Smoke-tests the live site and rolls back to the previous version if it fails.
+# Smoke-tests the live site. If it fails, rolls back the Worker straight away,
+# then redeploys the last good release (the newest v1.0.* tag) so the backend
+# container goes back too: a Worker rollback alone leaves the container on the
+# new image (confirmed in the Nov 13 rollback drill).
 # Can also be started by hand from the Actions tab.
 #
 # Needs two repository secrets:
@@ -51,6 +54,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.DEPLOY_SHA }}
+          fetch-depth: 0 # all tags, to find the last good release
 
       - uses: actions/setup-node@v4
         with:
@@ -92,14 +96,40 @@ jobs:
       - name: Smoke test
         run: python3 scripts/smoke_test.py "$SITE_URL" --version "${{ steps.after.outputs.version }}"
 
-      # Only when the deploy went out but something after it failed.
-      - name: Roll back
+      # The rest only runs when the deploy went out but something after it failed.
+
+      # Step 1: put the previous Worker version back. Instant, and fixes Worker
+      # or page problems, but the container stays on the new image.
+      - name: Roll back the Worker
+        id: rollback
         if: failure() && steps.deploy.outcome == 'success' && steps.before.outputs.version != ''
         working-directory: worker
         run: |
-          echo "Rolling back to ${{ steps.before.outputs.version }}"
+          echo "Rolling back the Worker to ${{ steps.before.outputs.version }}"
           npx wrangler rollback "${{ steps.before.outputs.version }}" --env="" --yes \
             --message "Smoke test failed for ${{ steps.after.outputs.version }}"
+
+      # Step 2: redeploy the last good release, which also puts its container
+      # image back. Tags are only made after a passing smoke test.
+      - name: Redeploy the last good release
+        id: redeploy
+        if: failure() && steps.rollback.outcome == 'success'
+        run: |
+          GOOD_TAG=$(git tag --list 'v1.0.*' --sort=-v:refname | head -n 1)
+          if [ -z "$GOOD_TAG" ]; then
+            echo "No earlier release tag; only the Worker was rolled back."
+            exit 1
+          fi
+          echo "Redeploying $GOOD_TAG"
+          git worktree add "$RUNNER_TEMP/good" "$GOOD_TAG"
+          cd "$RUNNER_TEMP/good/worker"
+          npm ci
+          npx wrangler deploy --env="" --message "Rollback: redeploy $GOOD_TAG"
+
+      # Step 3: prove the site recovered. The container takes a few minutes.
+      - name: Smoke test after rollback
+        if: failure() && steps.redeploy.outcome == 'success'
+        run: python3 scripts/smoke_test.py "$SITE_URL" --timeout 600
 
       # Tags the deployed commit, e.g. v1.0.12. Tags aren't blocked by
       # branch protection, unlike a version-bump commit to main.
