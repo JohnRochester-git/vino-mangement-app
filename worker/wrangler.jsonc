@@ -8,6 +8,10 @@
   // Lets the Worker read its own version ID (sent as X-Vino-Version).
   "version_metadata": { "binding": "CF_VERSION" },
 
+  // The live site's address. Cloudflare creates the DNS record and HTTPS
+  // certificate for it. The preview stays on workers.dev only.
+  "routes": [{ "pattern": "www.vinowine.org", "custom_domain": true }],
+
   // Only files in frontend/ are published as the website.
   "assets": { "directory": "../frontend", "binding": "ASSETS" },
 
@@ -39,6 +43,9 @@
     // using the TEST database, for drills and risky changes.
     // Environments don't inherit bindings or containers, so they're repeated here.
     "preview": {
+      // No routes: the preview must never take over www.vinowine.org.
+      "routes": [],
+
       "version_metadata": { "binding": "CF_VERSION" },
       "containers": [
         // 2, because the Worker code always picks between 2 instances.
