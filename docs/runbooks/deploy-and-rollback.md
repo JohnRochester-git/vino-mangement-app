@@ -52,7 +52,7 @@ git switch --detach v1.0.N
 cd worker
 npm ci
 npx wrangler deploy --env="" --message "Manual rollback to v1.0.N"
-python3 ../scripts/smoke_test.py https://vino.noahvastola.workers.dev --timeout 600
+python3 ../scripts/smoke_test.py https://www.vinowine.org --timeout 600
 git switch main
 ```
 
@@ -75,7 +75,7 @@ cd worker
 npx wrangler deployments status --env=""           # Worker version
 npx wrangler containers list                       # container application ID
 npx wrangler containers info <application-id>      # "image" shows the running image
-curl -sI https://vino.noahvastola.workers.dev/health | grep -i x-vino-version
+curl -sI https://www.vinowine.org/health | grep -i x-vino-version
 ```
 
 ## Timings measured so far
@@ -85,6 +85,11 @@ curl -sI https://vino.noahvastola.workers.dev/health | grep -i x-vino-version
 | Worker rollback taking effect | Seconds |
 | New container image live after `wrangler deploy` | About 1.5 minutes (drill); allow up to 5 minutes |
 | Automatic rollback after a failed deploy (run 1, Nov 12) | About 5 minutes, mostly the smoke test retrying |
+| Full automatic rollback with redeploy of the last good release (run 6, Nov 13) | About 6 minutes, ending with a passing smoke test |
+
+## Gradual rollout
+
+New container images roll out in two steps: half the instances first, then all (`rollout_step_percentage` in `worker/wrangler.jsonc`). During a rollout, some requests can reach an old container and some a new one, and a request that lands on an instance mid-swap can briefly fail. One such 500 was seen right after deploy 5 on Nov 13. To push an urgent fix to every instance at once, deploy by hand with `--containers-rollout=immediate`.
 
 ## Evidence
 
