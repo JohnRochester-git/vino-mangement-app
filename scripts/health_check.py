@@ -10,6 +10,10 @@ also posts an alert to Discord. --test-alert sends a test message and exits.
 With --max-backup-age-hours, it also checks when the nightly backup last
 succeeded (via the GitHub CLI) and alerts if that's too long ago.
 
+With --error-rate-zone and CF_ANALYTICS_TOKEN set, it also asks Cloudflare's
+analytics how many of the zone's responses in the last 15 minutes were 5xx
+errors, and alerts if that's over 5% (with at least 20 requests).
+
 In GitHub Actions it writes a results table to the run's summary page.
 """
 
@@ -25,6 +29,10 @@ from datetime import datetime, timezone
 
 USER_AGENT = "vino-health-check"
 SLOW_SECONDS = 3.0
+GRAPHQL_URL = os.environ.get("CF_GRAPHQL_URL", "https://api.cloudflare.com/client/v4/graphql")
+ERROR_RATE_LIMIT = 0.05
+ERROR_RATE_MIN_REQUESTS = 20
+ERROR_RATE_MINUTES = 15
 
 
 def fetch(url, timeout=20):
@@ -74,6 +82,38 @@ def last_backup_age_hours(repo, workflow="backup.yml"):
     return (datetime.now(timezone.utc) - finished).total_seconds() / 3600
 
 
+def zone_error_rate(zone_id, token, minutes=ERROR_RATE_MINUTES):
+    """(requests, 5xx responses) for the zone over the last few minutes."""
+    until = datetime.now(timezone.utc).replace(microsecond=0)
+    since = until.fromtimestamp(until.timestamp() - minutes * 60, timezone.utc)
+    query = """
+    query ($zone: string, $since: Time, $until: Time) {
+      viewer {
+        zones(filter: {zoneTag: $zone}) {
+          httpRequestsAdaptiveGroups(limit: 100, filter: {datetime_geq: $since, datetime_lt: $until}) {
+            count
+            dimensions { edgeResponseStatus }
+          }
+        }
+      }
+    }"""
+    variables = {"zone": zone_id, "since": since.isoformat().replace("+00:00", "Z"),
+                 "until": until.isoformat().replace("+00:00", "Z")}
+    body = json.dumps({"query": query, "variables": variables}).encode()
+    request = urllib.request.Request(
+        GRAPHQL_URL, data=body, method="POST",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}", "User-Agent": USER_AGENT},
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        data = json.loads(response.read())
+    if data.get("errors"):
+        raise RuntimeError(data["errors"][0].get("message", "GraphQL error"))
+    groups = data["data"]["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
+    total = sum(g["count"] for g in groups)
+    errors = sum(g["count"] for g in groups if g["dimensions"]["edgeResponseStatus"] >= 500)
+    return total, errors
+
+
 def send_discord(webhook, message):
     body = json.dumps({"username": "Vino Alerts", "content": message}).encode()
     request = urllib.request.Request(
@@ -103,6 +143,7 @@ def main():
     parser.add_argument("--test-alert", action="store_true", help="send a test message to Discord and exit")
     parser.add_argument("--max-backup-age-hours", type=float, help="alert if the last successful backup is older")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"), help="owner/repo for the backup check")
+    parser.add_argument("--error-rate-zone", help="Cloudflare zone ID to check the 5xx rate for (needs CF_ANALYTICS_TOKEN)")
     args = parser.parse_args()
     base = args.url.rstrip("/")
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
@@ -127,6 +168,16 @@ def main():
                 problems.append(f"last successful backup was {age:.0f} hours ago (limit {args.max_backup_age_hours:.0f})")
         except Exception as err:
             problems.append(f"couldn't check the backup: {err}")
+
+    if args.error_rate_zone and os.environ.get("CF_ANALYTICS_TOKEN"):
+        try:
+            total, errors = zone_error_rate(args.error_rate_zone, os.environ["CF_ANALYTICS_TOKEN"])
+            rate = errors / total if total else 0.0
+            print(f"INFO  last {ERROR_RATE_MINUTES} min: {total} requests, {errors} errors (5xx), {rate:.1%}")
+            if total >= ERROR_RATE_MIN_REQUESTS and rate > ERROR_RATE_LIMIT:
+                problems.append(f"error rate {rate:.0%} ({errors} of {total} responses were 5xx in the last {ERROR_RATE_MINUTES} min)")
+        except Exception as err:
+            problems.append(f"couldn't check the error rate: {err}")
 
     for r in results:
         print(f"{'PASS' if r['passed'] else 'FAIL'}  {r['name']:<10} status {r['status']:<3}  {r['seconds']}s")
