@@ -20,8 +20,14 @@
   "assets": { "directory": "../frontend", "binding": "ASSETS" },
 
   // The backend container, built from backend/Dockerfile.
+  // Gradual rollout: a new image goes to half the instances first, then all.
   "containers": [
-    { "class_name": "Backend", "image": "../backend/Dockerfile", "max_instances": 3 }
+    {
+      "class_name": "Backend",
+      "image": "../backend/Dockerfile",
+      "max_instances": 3,
+      "rollout_step_percentage": [50, 100]
+    }
   ],
 
   // Each container instance is managed by a Durable Object of class Backend.
