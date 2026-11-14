@@ -1,9 +1,12 @@
-# Checks the live site every 15 minutes, and that the nightly backup ran.
+# Checks the live site every 15 minutes, that the nightly backup ran, and the
+# share of 5xx errors in the last 15 minutes.
 # Posts to Discord when something fails; the failed run also triggers
 # GitHub's own failure email. Can be started by hand to send a test alert.
 #
-# Needs one repository secret:
+# Needs two repository secrets:
 #   DISCORD_WEBHOOK_URL  webhook for the #vino-alerts channel
+#   CF_ANALYTICS_TOKEN   Cloudflare token with Zone Analytics Read on vinowine.org
+#                        (the error-rate check is skipped if it's missing)
 
 name: Health check
 
@@ -30,6 +33,8 @@ env:
   SITE_URL: https://www.vinowine.org
   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
   GH_TOKEN: ${{ github.token }}
+  CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+  CF_ZONE_ID: 6faa9e41439113028c7bd2c7af15d4f3 # vinowine.org (not secret)
 
 jobs:
   check:
@@ -43,6 +48,6 @@ jobs:
         run: python3 scripts/health_check.py "$SITE_URL" --test-alert
 
       # 30 hours: a day, plus room for GitHub starting the backup late.
-      - name: Check the site and the backup
+      - name: Check the site, the backup and the error rate
         if: ${{ !inputs.test_alert }}
-        run: python3 scripts/health_check.py "$SITE_URL" --max-backup-age-hours 30
+        run: python3 scripts/health_check.py "$SITE_URL" --max-backup-age-hours 30 --error-rate-zone "$CF_ZONE_ID"
