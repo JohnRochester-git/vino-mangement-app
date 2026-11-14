@@ -14,7 +14,7 @@
 
   // Keep vino.noahvastola.workers.dev on too. Wrangler turns it off by default
   // once "routes" are set, which broke deploy run 6.
-  "workers_dev": true,
+  "workers_dev": false,
 
   // Only files in frontend/ are published as the website.
   "assets": { "directory": "../frontend", "binding": "ASSETS" },
