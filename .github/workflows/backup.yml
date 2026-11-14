@@ -78,3 +78,15 @@ jobs:
             --file "$RUNNER_TEMP/vino-db-$STAMP.sql" \
             --content-type application/sql \
             --remote
+      
+
+      # Alerts straight away; the health check would only notice after 30 hours.
+      - name: Alert Discord
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -H "Content-Type: application/json" -A "vino-backup" \
+            -d "{\"username\": \"Vino Alerts\", \"content\": \"🚨 **Nightly D1 backup failed.** ${RUN_URL}\"}" \
+            "$DISCORD_WEBHOOK_URL"

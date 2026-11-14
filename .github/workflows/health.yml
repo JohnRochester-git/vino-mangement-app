@@ -1,0 +1,48 @@
+# Checks the live site every 15 minutes, and that the nightly backup ran.
+# Posts to Discord when something fails; the failed run also triggers
+# GitHub's own failure email. Can be started by hand to send a test alert.
+#
+# Needs one repository secret:
+#   DISCORD_WEBHOOK_URL  webhook for the #vino-alerts channel
+
+name: Health check
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub can start scheduled runs late when it's busy.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: "Send a test message to Discord instead of checking"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read # to look up the backup workflow's last successful run
+
+concurrency:
+  group: health-check
+  cancel-in-progress: true
+
+env:
+  SITE_URL: https://www.vinowine.org
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send a test alert
+        if: inputs.test_alert
+        run: python3 scripts/health_check.py "$SITE_URL" --test-alert
+
+      # 30 hours: a day, plus room for GitHub starting the backup late.
+      - name: Check the site and the backup
+        if: ${{ !inputs.test_alert }}
+        run: python3 scripts/health_check.py "$SITE_URL" --max-backup-age-hours 30
