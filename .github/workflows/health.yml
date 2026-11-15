@@ -12,8 +12,9 @@ name: Health check
 
 on:
   schedule:
-    # Every 15 minutes. GitHub can start scheduled runs late when it's busy.
-    - cron: "*/15 * * * *"
+    # Every 15 minutes, avoiding the top of the hour: GitHub's docs say
+    # scheduled runs are delayed most at the start of each hour.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
       test_alert:

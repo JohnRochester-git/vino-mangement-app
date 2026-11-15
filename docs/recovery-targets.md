@@ -32,12 +32,14 @@ How much data we could lose (RPO) and how long the app could be down (RTO) in ea
 | Container live after a redeploy | About 1.5 minutes | Rollback drill, Nov 13 |
 | Automatic rollback after a failed smoke test | About 5 minutes | Deploy run 1, Nov 12 |
 | Automatic rollback with redeploy of the last good release | About 6 minutes | Deploy run 6, Nov 13 |
+| D1 Time Travel restore, including checking the data | 6 seconds | Restore drill A, Nov 15 |
+| Nightly export restored into a new database and checked | About 2 minutes | Restore drill B, Nov 15 |
 
 The 10- and 15-minute RTOs allow for the smoke test's 5-minute retry window plus the rollback steps.
 
-**Still to measure in Sprint 6:**
-- D1 Time Travel restore on the test database (against the 1-hour RTO)
-- Restoring a nightly export into the test database (against the 2-hour RTO)
+Both database drills came in far under their targets (6 seconds against 1 hour, and 2 minutes against 2 hours). The targets stay as they are: in a real incident, most of the time goes on noticing the problem and deciding what to restore, not on the restore itself. See [drills/restore-drills.md](drills/restore-drills.md).
+
+**Still to measure:**
 - Rebuild from code (nice-to-have; against the 4-hour RTO)
 
 ## Where the backups are
