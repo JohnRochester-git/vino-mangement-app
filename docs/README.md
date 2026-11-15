@@ -7,3 +7,4 @@
 - [recovery-targets.md](recovery-targets.md): recovery time and data-loss targets, and what they're based on.
 - [incident-response.md](incident-response.md): severity levels, steps and message templates for when something breaks.
 - [runbooks/deploy-and-rollback.md](runbooks/deploy-and-rollback.md): how deploys and rollbacks work, and how to step in by hand.
+- [drills/restore-drills.md](drills/restore-drills.md): the timed database restore drills and their results.

@@ -12,8 +12,8 @@
   // certificate for it. The preview stays on workers.dev only.
   "routes": [{ "pattern": "www.vinowine.org", "custom_domain": true }],
 
-  // Keep vino.noahvastola.workers.dev on too. Wrangler turns it off by default
-  // once "routes" are set, which broke deploy run 6.
+  // workers.dev is off: Cloudflare's WAF and HTTPS settings only protect
+  // www.vinowine.org, so a second public address would bypass them.
   "workers_dev": false,
 
   // Only files in frontend/ are published as the website.
