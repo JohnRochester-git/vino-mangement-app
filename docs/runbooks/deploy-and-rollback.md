@@ -91,6 +91,8 @@ curl -sI https://www.vinowine.org/health | grep -i x-vino-version
 
 New container images roll out in two steps: half the instances first, then all (`rollout_step_percentage` in `worker/wrangler.jsonc`). During a rollout, some requests can reach an old container and some a new one, and a request that lands on an instance mid-swap can briefly fail. One such 500 was seen right after deploy 5 on Nov 13. To push an urgent fix to every instance at once, deploy by hand with `--containers-rollout=immediate`.
 
+Because a half-finished rollout can answer some requests correctly and others not, the pipeline's smoke test must keep passing for **3 minutes** (`--stable-seconds 180`) before a deploy counts as good. Without that, a single lucky pass could get a broken image tagged as a good release: in testing against a site failing half its requests, the old one-pass smoke test passed it 4 times out of 5. Deploys therefore take a few minutes longer.
+
 ## Evidence
 
 - Deploy run 1 (Nov 12): smoke test failed, automatic rollback restored the previous version.

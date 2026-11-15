@@ -39,7 +39,7 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # deploy, smoke test, and a full rollback if needed
     permissions:
       contents: write # to push the version tag
     env:
@@ -91,9 +91,13 @@ jobs:
           echo "Live version after deploy: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      # Retries for up to 5 minutes while the new container starts.
+      # Retries for up to 10 minutes while the new container starts, then must
+      # keep passing for 3 minutes: the gradual rollout updates half the
+      # containers first, so one lucky pass could hide a broken new image.
       - name: Smoke test
-        run: python3 scripts/smoke_test.py "$SITE_URL" --version "${{ steps.after.outputs.version }}"
+        run: |
+          python3 scripts/smoke_test.py "$SITE_URL" --version "${{ steps.after.outputs.version }}" \
+            --timeout 600 --stable-seconds 180
 
       # The rest only runs when the deploy went out but something after it failed.
 
@@ -125,10 +129,10 @@ jobs:
           npm ci
           npx wrangler deploy --env="" --message "Rollback: redeploy $GOOD_TAG"
 
-      # Step 3: prove the site recovered. The container takes a few minutes.
+      # Step 3: prove the site recovered, and stays recovered for 3 minutes.
       - name: Smoke test after rollback
         if: failure() && steps.redeploy.outcome == 'success'
-        run: python3 scripts/smoke_test.py "$SITE_URL" --timeout 600
+        run: python3 scripts/smoke_test.py "$SITE_URL" --timeout 600 --stable-seconds 180
 
       # Tags the deployed commit, e.g. v1.0.12. Tags aren't blocked by
       # branch protection, unlike a version-bump commit to main.

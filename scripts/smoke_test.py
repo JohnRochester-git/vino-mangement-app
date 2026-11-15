@@ -11,6 +11,10 @@ served by Cloudflare without running the Worker, so they don't carry it.
 
 A new deploy can take a few minutes while the container starts, so it retries
 until every check passes or --timeout seconds have gone by.
+
+With --stable-seconds, it doesn't stop at the first pass: every check must then
+keep passing for that long. During a gradual rollout some requests still reach
+old or half-started containers, so one lucky pass isn't enough.
 Exits 0 when everything passes, 1 otherwise.
 """
 
@@ -90,11 +94,14 @@ def main():
     parser.add_argument("--version", help="Worker version ID the answers must come from")
     parser.add_argument("--timeout", type=int, default=300, help="seconds to keep retrying (default 300)")
     parser.add_argument("--interval", type=int, default=15, help="seconds between attempts (default 15)")
+    parser.add_argument("--stable-seconds", type=int, default=0,
+                        help="after the first pass, every check must keep passing this long (default 0)")
     args = parser.parse_args()
     base = args.url.rstrip("/")
 
     deadline = time.monotonic() + args.timeout
     attempt = 0
+    stable_since = None  # when the current run of passing attempts began
     while True:
         attempt += 1
         try:
@@ -103,10 +110,25 @@ def main():
             results = [("site reachable", False, str(err))]
 
         failed = [r for r in results if not r[1]]
-        if not failed or time.monotonic() >= deadline:
+        now = time.monotonic()
+        if failed:
+            if stable_since is not None:
+                print(f"Attempt {attempt}: failed again after passing; restarting the stability window")
+            stable_since = None
+        elif stable_since is None:
+            stable_since = now
+        stable_for = 0 if stable_since is None else now - stable_since
+        if (not failed and stable_for >= args.stable_seconds) or now >= deadline:
             break
-        print(f"Attempt {attempt}: {len(failed)} check(s) failing, retrying in {args.interval}s")
+        if failed:
+            print(f"Attempt {attempt}: {len(failed)} check(s) failing, retrying in {args.interval}s")
+        else:
+            print(f"Attempt {attempt}: passing for {stable_for:.0f}s of {args.stable_seconds}s")
         time.sleep(args.interval)
+
+    if not failed and stable_for < args.stable_seconds:
+        failed = [("stability", False, f"passing for only {stable_for:.0f}s of {args.stable_seconds}s")]
+        results = results + failed
 
     for name, passed, detail in results:
         print(f"{'PASS' if passed else 'FAIL'}  {name}  ({detail})")
