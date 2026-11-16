@@ -20,7 +20,7 @@
   // with `npx wrangler secret put GOOGLE_CLIENT_SECRET --env=""`.
   // Google sign-in stays off until all three are set.
   "vars": {
-    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_ID": "699318680981-j6o75sle2017qq6oqlaobkscp5a092d1.apps.googleusercontent.com",
     "GOOGLE_REDIRECT_URI": "https://www.vinowine.org/api/v1/auth/google/callback"
   },
 
@@ -66,7 +66,7 @@
       // Same Google client as live; its secret is set separately for this
       // environment (`npx wrangler secret put GOOGLE_CLIENT_SECRET --env preview`).
       "vars": {
-        "GOOGLE_CLIENT_ID": "",
+        "GOOGLE_CLIENT_ID": "699318680981-j6o75sle2017qq6oqlaobkscp5a092d1.apps.googleusercontent.com",
         "GOOGLE_REDIRECT_URI": "https://vino-preview.noahvastola.workers.dev/api/v1/auth/google/callback"
       },
 
