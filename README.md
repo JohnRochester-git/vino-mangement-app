@@ -1,6 +1,28 @@
 # vino-mangement-app
 Vino is a personal wine cellar management application designed to help users organize, track, and manage their wine collection.
 
+**Live site:** https://www.vinowine.org
+
+## How it's built and run
+
+The whole app runs on Cloudflare: the pages and a Worker at the edge, the Python backend in Cloudflare Containers, and the data in Cloudflare D1. Every merge to `main` is tested, deployed, smoke-tested and, if it fails, rolled back automatically.
+
+<!-- Screenshots to add: the live site, a passing Deploy run, the Grafana vino-health dashboard, a Discord alert. -->
+
+| | |
+| --- | --- |
+| **Architecture** | [docs/architecture.md](docs/architecture.md) (diagrams), [docs/networking.md](docs/networking.md), and why Cloudflare: [ADR 001](docs/adr/001-cloudflare-native.md) |
+| **Pipeline** | CI checks every pull request (lint, tests, secret scan, image scan); Deploy releases each merge and tags it `v1.0.N`. See [the deploy runbook](docs/runbooks/deploy-and-rollback.md) |
+| **Infrastructure as code** | Terraform in [`infra/`](infra) (databases, storage, DNS, HTTPS, WAF); Wrangler in [`worker/wrangler.jsonc`](worker/wrangler.jsonc) |
+| **Security** | [docs/security.md](docs/security.md) |
+| **Backups and recovery** | Nightly database backups to R2, plus 30-day point-in-time restore. Targets and drills: [recovery targets](docs/recovery-targets.md), [restore drills](docs/drills/restore-drills.md) |
+| **Monitoring and alerts** | Grafana Cloud uptime checks and a scheduled health check, alerting Discord. When something breaks: [incident response](docs/incident-response.md) |
+| **All docs** | [docs/](docs/README.md) |
+
+### Costs
+
+Estimated at about **$5–15 a month**, plus about $10 a year for the domain. The only required paid item is Cloudflare's Workers Paid plan ($5/month), which Containers need. Container time beyond the plan's allowance is billed by use; everything else (D1, R2, DNS, WAF, Grafana Cloud, GitHub Actions on a public repository) is within free allowances.
+
 ## Run it locally
 
 This runs the whole app on your computer: the backend (the server that stores accounts and wines) and the pages you click through. It takes two terminals: one for the backend, one for the pages.

@@ -8,3 +8,8 @@
 - [incident-response.md](incident-response.md): severity levels, steps and message templates for when something breaks.
 - [runbooks/deploy-and-rollback.md](runbooks/deploy-and-rollback.md): how deploys and rollbacks work, and how to step in by hand.
 - [drills/restore-drills.md](drills/restore-drills.md): the timed database restore drills and their results.
+- [postmortems/game-day.md](postmortems/game-day.md): the November 15 game day outage, what went wrong, and the follow-up actions.
+- [architecture.md](architecture.md): diagrams of the runtime and of how it's built, deployed, backed up and monitored.
+- [networking.md](networking.md): the domain, DNS records, HTTPS settings, and the path a request takes.
+- [adr/001-cloudflare-native.md](adr/001-cloudflare-native.md): why the whole app runs on Cloudflare.
+- [demo-day-checklist.md](demo-day-checklist.md): steps before, during and after the demo.
