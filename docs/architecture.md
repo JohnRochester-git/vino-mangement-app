@@ -2,34 +2,52 @@
 
 The Vino app runs entirely on Cloudflare, deployed and checked automatically from GitHub. Why Cloudflare: [ADR 001](adr/001-cloudflare-native.md). How requests flow: [networking.md](networking.md).
 
-## Runtime: what serves a visitor
+## Three tiers
+
+The app follows the classic three-tier layout. Sign-in uses Google as an external identity provider, alongside email and password. The environment the tiers run in is shown on the side.
+
+Printable, high-resolution versions of both diagrams: [images/architecture-tiers.png](images/architecture-tiers.png) and [images/architecture-operations.png](images/architecture-operations.png). These are rendered from the diagrams below; re-render them if a diagram changes.
 
 ```mermaid
-flowchart LR
-    user([Visitor's browser])
-
-    subgraph cf[Cloudflare]
-        edge["Zone vinowine.org<br/>HTTPS, TLS 1.2+, HSTS<br/>WAF managed rules<br/>login rate limit<br/>vinowine.org → www redirect"]
-        worker["Worker 'vino'<br/>routes /api/* and /health<br/>D1 bridge (d1.internal)"]
-        assets["Static assets<br/>frontend/: pages, CSS, JS"]
-        subgraph containers[Cloudflare Containers]
-            c1["Backend container 1<br/>Flask + gunicorn"]
-            c2["Backend container 2<br/>Flask + gunicorn"]
-        end
-        d1[("D1 vino-db<br/>live database")]
-        r2img[("R2 vino-bottle-images")]
+flowchart TB
+    subgraph pres["1 · Presentation tier"]
+        browser(["Visitor's browser"])
+        pages["Web pages: HTML, CSS, JS<br/>login, welcome, cellar dashboard"]
     end
 
-    user -->|https://www.vinowine.org| edge --> worker
-    worker -->|pages| assets
-    worker -->|/api/*, /health| c1
-    worker -->|/api/*, /health| c2
-    c1 -.->|SQL via d1.internal| worker
-    c2 -.->|SQL via d1.internal| worker
-    worker -->|D1 binding| d1
+    subgraph app["2 · Application tier"]
+        gateway["API gateway: Worker 'vino'<br/>routes /api/* to the backend"]
+        api["Backend API: Flask + gunicorn (2 containers)<br/>accounts, sessions, Google sign-in,<br/>cellar, journal, value, insights"]
+    end
+
+    subgraph data["3 · Data tier"]
+        d1[("D1 vino-db<br/>users, sessions, wines, inventory,<br/>consumption, value_history, wishlist")]
+        r2[("R2 vino-bottle-images<br/>photos, keyed by wine.wineImageKey")]
+    end
+
+    google["Google Identity<br/>OAuth 2.0 / OpenID Connect<br/>external sign-in"]
+
+    subgraph env["Environment"]
+        direction TB
+        edge["Cloudflare edge<br/>DNS, HTTPS, WAF, rate limit"]
+        hosting["Cloudflare Workers + Containers<br/>hosting, gradual rollout"]
+        cicd["GitHub Actions<br/>CI, deploy, Terraform, backups"]
+        monitor["Grafana Cloud + health check<br/>alerts to Discord"]
+        edge ~~~ hosting ~~~ cicd ~~~ monitor
+    end
+
+    browser -->|loads| pages
+    pages -->|"API calls with session cookie"| gateway
+    gateway -->|"/api/*"| api
+    api -->|"SQL, through the Worker's D1 bridge"| d1
+    api -.->|"photos (planned)"| r2
+    api <-->|"Google sign-in:<br/>code → ID token"| google
 ```
 
-The containers have no public address: the Worker is the only way in, and the only way out to the database.
+- **Presentation tier:** static pages, served by Cloudflare. They hold no data of their own; everything comes from the API.
+- **Application tier:** the Worker is the only way in to the backend (the containers have no public address) and the only way out to the database. The backend owns all business rules, accounts and sessions.
+- **Data tier:** D1 holds all app data, including historical values (`value_history`). R2 is where bottle photos go, keyed by `wine.wineImageKey`; photo upload isn't built yet.
+- **Google sign-in:** the browser goes to Google, Google sends it back to the backend with a one-time code, and the backend swaps the code for an ID token directly with Google. The backend then creates its own session, the same as for a password login. Details: [api.md](api.md#sign-in-with-google).
 
 ## Operations: how it's built, deployed, backed up and watched
 
@@ -46,7 +64,7 @@ flowchart TB
     end
 
     subgraph cf[Cloudflare]
-        live["Worker 'vino' + containers<br/>www.vinowine.org"]
+        live["Worker 'vino' + containers<br/>the live site"]
         preview["Worker 'vino-preview'<br/>+ D1 vino-db-test"]
         d1[("D1 vino-db")]
         r2b[("R2 vino-backups")]

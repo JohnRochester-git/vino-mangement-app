@@ -112,3 +112,11 @@ No column changes. The `blendStyle` and `pairingName` values are unique, and sta
 ## Not in the ERD, created by tooling: `d1_migrations`
 
 Records which migration files have run. Wrangler creates and uses it on Cloudflare D1. The local migration command (`python -m vino.migrate`) uses the same table, so local and cloud databases stay in step. It isn't part of the data model.
+
+## Sign in with Google (migration 0004)
+
+**`user.userGoogleSub`** (new column): Google's permanent ID for the account, from the `sub` claim in its ID token. It's `NULL` for password-only accounts, and unique when set. Accounts created through Google store `!google` in `userPasshash`, which can never match a password.
+
+**`oauth_state`** (new table): one row per Google sign-in in progress, holding the hash of the `state` sent to Google, the PKCE code verifier and the `nonce`. Each row is deleted when the sign-in finishes, or after 10 minutes. It's in the database rather than a cookie so any container instance can finish a sign-in another one started.
+
+**Reason:** the Milestone 2 feedback asked for external authentication via Google.

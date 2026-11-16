@@ -282,6 +282,59 @@ body.login-page {
 }
 
 /* Auth mode toggle (sign in / create account) */
+/* ---- Sign in with Google ---- */
+.google-signin {
+  display: none; /* shown by auth.js when the backend has Google switched on */
+}
+
+.google-signin.visible {
+  display: block;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--hairline-gold);
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-size: 14.5px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-google:hover {
+  border-color: var(--gold);
+  background: rgba(201, 161, 91, 0.06);
+  transform: translateY(-1px);
+}
+
 .auth-toggle {
   margin-top: 22px;
   padding-top: 18px;

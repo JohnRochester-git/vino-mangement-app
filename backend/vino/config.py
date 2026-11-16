@@ -46,6 +46,14 @@ class Config:
     barcode_contact: str = ""
     provider_timeout: float = 3.0
     max_content_length: int = 2 * 1024 * 1024
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    frontend_url: str = ""
+
+    @property
+    def google_enabled(self):
+        return bool(self.google_client_id and self.google_client_secret and self.google_redirect_uri)
 
     @classmethod
     def from_env(cls):
@@ -62,6 +70,10 @@ class Config:
             barcode_provider=os.environ.get("BARCODE_PROVIDER", "none").strip().lower(),
             barcode_api_key=os.environ.get("BARCODE_API_KEY", ""),
             barcode_contact=os.environ.get("BARCODE_CONTACT", ""),
+            google_client_id=os.environ.get("GOOGLE_CLIENT_ID", "").strip(),
+            google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET", "").strip(),
+            google_redirect_uri=os.environ.get("GOOGLE_REDIRECT_URI", "").strip(),
+            frontend_url=os.environ.get("FRONTEND_URL", "").strip().rstrip("/"),
         )
 
     def validate(self):

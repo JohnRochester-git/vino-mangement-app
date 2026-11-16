@@ -13,3 +13,4 @@
 - [networking.md](networking.md): the domain, DNS records, HTTPS settings, and the path a request takes.
 - [adr/001-cloudflare-native.md](adr/001-cloudflare-native.md): why the whole app runs on Cloudflare.
 - [demo-day-checklist.md](demo-day-checklist.md): steps before, during and after the demo.
+- [google-signin.md](google-signin.md): how to set up Sign in with Google for the live site, the preview and local development.

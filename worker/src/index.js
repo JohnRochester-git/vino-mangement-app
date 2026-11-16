@@ -13,6 +13,19 @@ export class Backend extends Container {
         ALLOWED_ORIGINS: "",
         BARCODE_PROVIDER: "none",
     };
+
+    // Google sign-in settings come from the Worker's environment: the client ID
+    // and redirect address are vars in wrangler.jsonc, the client secret is a
+    // Wrangler secret. Missing values just switch Google sign-in off.
+    constructor(ctx, env) {
+        super(ctx, env);
+        this.envVars = {
+            ...this.envVars,
+            GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID ?? "",
+            GOOGLE_REDIRECT_URI: env.GOOGLE_REDIRECT_URI ?? "",
+            GOOGLE_CLIENT_SECRET: env.GOOGLE_CLIENT_SECRET ?? "",
+        };
+    }
 }
 
 Backend.outboundByHost = {

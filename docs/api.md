@@ -179,6 +179,34 @@ No body, but still send `Content-Type: application/json`. `200`: `{"loggedOut": 
 
 `200`: the same shape as signup (the user plus their collections). `401` if not logged in. Call this when a page loads to find out who's logged in.
 
+### GET /auth/providers
+
+Which sign-in methods are switched on: `{"password": true, "google": true}`. The login page shows the Google button only when `google` is `true`. No login needed.
+
+### Sign in with Google
+
+These two are browser addresses, not API calls: the login page links to the first, and Google sends the browser back to the second. Both end with a redirect, never JSON.
+
+**GET /auth/google/start** sends the browser to Google's sign-in page. It uses the authorization code flow with PKCE: a one-time `state`, a `nonce` and a code verifier are created and kept in the `oauth_state` table for 10 minutes.
+
+**GET /auth/google/callback** is where Google sends the browser back, with `?code=…&state=…`. The backend:
+
+1. Checks the `state` matches one it created in the last 10 minutes, and deletes it, so each one works once.
+2. Swaps the code for Google's ID token, calling Google directly over HTTPS with the client secret and the code verifier.
+3. Checks the ID token: issued by Google, for this app's client ID, not expired, the same `nonce`, and an email Google has verified.
+4. Finds the account by Google ID, otherwise by email (linking an existing password account to Google), otherwise creates one with its own "My Cellar" collection.
+5. Creates a session exactly like a password login, sets the same cookie, and redirects to `welcome.html`.
+
+If anything fails, it redirects to `login.html?error=…` instead:
+
+| `error` | Meaning |
+| --- | --- |
+| `google_cancelled` | The person cancelled on Google's page |
+| `google_failed` | The state was missing, expired or reused; the token exchange failed; or the ID token didn't pass the checks. Details are in the backend's log. |
+| `google_unavailable` | Google sign-in isn't set up (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` or `GOOGLE_REDIRECT_URI` is missing) |
+
+Accounts created through Google have no password: `POST /auth/login` never succeeds for them. A password account that later signs in with Google keeps its password, so both ways work.
+
 ## Collections and household
 
 A collection is a cellar. A household shares one: the owner adds other people by email, and everyone sees and edits the same bottles. Only the owner can delete the collection or change who's in it.

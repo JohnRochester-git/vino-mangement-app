@@ -26,6 +26,10 @@ LOCKOUT_WINDOW_MINUTES = 15
 LOCKOUT_MINUTES = 5
 LOGIN_FAILED_MESSAGE = "That email and password don't match an account."
 
+# userPasshash for accounts created by signing in with Google. It isn't a valid
+# hash, so check_password_hash never accepts any password for it.
+NO_PASSWORD = "!google"
+
 # Checked against when the email is unknown, so both cases take the same time.
 _DUMMY_HASH = generate_password_hash("not-a-real-password")
 
@@ -34,7 +38,7 @@ def _hash_token(token):
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def _new_session_statements(email_address):
+def new_session_statements(email_address):
     """SQL that creates a session for the user with this email, and the token
     for the cookie. Returned as statements so callers can batch them."""
     token = secrets.token_urlsafe(32)
@@ -47,7 +51,7 @@ def _new_session_statements(email_address):
     return token, [(sql, [_hash_token(token), now_iso(), expires, email_address])]
 
 
-def _set_cookie(response, token):
+def set_session_cookie(response, token):
     config = current_app.config["VINO"]
     response.set_cookie(
         COOKIE_NAME,
@@ -73,7 +77,7 @@ def user_json(row):
         "userEmail": row["userEmail"],
         "userFname": row["userFname"],
         "userLname": row["userLname"],
-        "userFullname": f"{row['userFname']} {row['userLname']}",
+        "userFullname": f"{row['userFname']} {row['userLname']}".strip(),
         "userCreatedAt": row["userCreatedAt"],
     }
 
@@ -122,26 +126,36 @@ LOGIN_SPEC = {
 }
 
 
-@bp.post("/auth/signup")
-def signup():
-    data = validate(json_body(), SIGNUP_SPEC)
+def new_account_statements(email_address, passhash, first, last, google_sub=None):
+    """SQL that creates a user with their own "My Cellar" collection.
+    Shared by password signup and Google sign-in."""
     now = now_iso()
-    token, session_sql = _new_session_statements(data["userEmail"])
-    statements = [
+    return [
         (
-            "INSERT INTO user (userEmail, userPasshash, userFname, userLname, userCreatedAt) VALUES (?, ?, ?, ?, ?)",
-            [data["userEmail"], generate_password_hash(data["password"]), data["userFname"], data["userLname"], now],
+            "INSERT INTO user (userEmail, userPasshash, userFname, userLname, userCreatedAt, userGoogleSub) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [email_address, passhash, first, last, now, google_sub],
         ),
         (
             "INSERT INTO collection (collectionName, userID) SELECT ?, userID FROM user WHERE userEmail = ?",
-            ["My Cellar", data["userEmail"]],
+            ["My Cellar", email_address],
         ),
         (
             "INSERT INTO collection_member (collectionId, userID, memberRole, memberAddedAt) "
             "SELECT c.collectionId, c.userID, 'owner', ? FROM collection c "
             "JOIN user u ON u.userID = c.userID WHERE u.userEmail = ?",
-            [now, data["userEmail"]],
+            [now, email_address],
         ),
+    ]
+
+
+@bp.post("/auth/signup")
+def signup():
+    data = validate(json_body(), SIGNUP_SPEC)
+    token, session_sql = new_session_statements(data["userEmail"])
+    statements = [
+        *new_account_statements(data["userEmail"], generate_password_hash(data["password"]),
+                                data["userFname"], data["userLname"]),
         *session_sql,
     ]
     try:
@@ -154,7 +168,7 @@ def signup():
     user = db.query_one("SELECT * FROM user WHERE userEmail = ?", [data["userEmail"]])
     response = jsonify(_me_payload(user))
     response.status_code = 201
-    return _set_cookie(response, token)
+    return set_session_cookie(response, token)
 
 
 def _is_locked_out(email_address):
@@ -194,9 +208,9 @@ def login():
         db.execute(*record)
         raise APIError(401, "invalid_credentials", LOGIN_FAILED_MESSAGE)
 
-    token, session_sql = _new_session_statements(address)
+    token, session_sql = new_session_statements(address)
     db.batch([record, *session_sql])
-    return _set_cookie(jsonify(_me_payload(user)), token)
+    return set_session_cookie(jsonify(_me_payload(user)), token)
 
 
 @bp.post("/auth/logout")

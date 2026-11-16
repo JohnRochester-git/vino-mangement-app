@@ -75,6 +75,7 @@ Static files are served by Cloudflare before the Worker's code runs, so they don
 | From | To | Why |
 | --- | --- | --- |
 | Backend container | `d1.internal` (intercepted by the Worker) | Database |
-| Backend container | The internet | Allowed by the containers library's default. Not used while the barcode lookup provider is off. See [security.md](security.md) |
+| Backend container | `oauth2.googleapis.com` (HTTPS) | Google sign-in: swapping the one-time code for an ID token |
+| Backend container | The rest of the internet | Allowed by the containers library's default; nothing else uses it while the barcode lookup provider is off. If internet access is ever switched off (`enableInternet = false`), `oauth2.googleapis.com` must stay allowed. See [security.md](security.md) |
 | Grafana Cloud probes (2 US locations) | `www.vinowine.org` | Uptime checks |
 | GitHub Actions | Cloudflare API, `www.vinowine.org` | Deploys, backups, Terraform, health checks |
