@@ -6,7 +6,8 @@ What to do when something breaks on www.vinowine.org: how we find out, how serio
 
 | Signal | What it means | Where |
 | --- | --- | --- |
-| 🚨 **Vino health check failed** in Discord `#vino-alerts` | The site, the API, the backup or the error rate failed a check. The message lists which | Health check workflow, every 15 minutes |
+| **Grafana alert** in Discord `#vino-alerts` | `vino-health` or `vino-api` is failing from Grafana's probe locations: the site or the backend is down. **The main outage alert**, within a few minutes | Grafana Cloud Synthetic Monitoring |
+| 🚨 **Vino health check failed** in Discord `#vino-alerts` | The site, the API, the backup or the error rate failed a check. The message lists which | Health check workflow (scheduled every 15 minutes, but GitHub often runs it hours apart) |
 | 🚨 **Nightly D1 backup failed** in Discord | Last night's export didn't reach R2 | Backup workflow |
 | GitHub email: a workflow run failed | Same as the two above, plus failed Deploy and Terraform runs | GitHub notifications |
 | A failed **Deploy** run | The new version failed its smoke test and was rolled back automatically | Actions tab |

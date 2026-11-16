@@ -28,7 +28,7 @@ Zone settings can't be deleted by Terraform: removing one from the code leaves i
 
 ## Application
 
-- **Passwords** are stored only as salted hashes, using Werkzeug's `generate_password_hash` (by default scrypt in Werkzeug 3.x; to confirm).
+- **Passwords** are stored only as salted hashes, using Werkzeug's `generate_password_hash`. With the pinned Werkzeug 3.1.9 that's scrypt (`scrypt:32768:8:1`), checked Nov 16.
 - **Sessions** are random tokens in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie. The database stores only a SHA-256 hash of each token. Sessions last 14 days.
 - **The D1 bridge isn't public.** The backend reaches the database through the Worker's outbound handler for `d1.internal`, which only the container can call. The public Worker routes only `/api/*` and `/health` to the container.
 - **Only `frontend/` is published as the website**, so code, config and `.git` are never served by the Worker.
@@ -67,7 +67,12 @@ Each token does one job, so a leak is contained: the backup token can't deploy, 
 
 ## Monitoring
 
-- **Health check every 15 minutes** (`health.yml`): the site, the API, the last successful backup (older than 30 hours alerts), and the share of 5xx responses over the last 15 minutes (over 5% with at least 20 requests alerts). Problems post to Discord `#vino-alerts`, and the failed run also triggers GitHub's failure email.
+- **Uptime monitoring from outside GitHub** (Grafana Cloud Synthetic Monitoring, free tier), from 2 US locations:
+  - `vino-health`: `/health` must return 200 and `OK`, every 2 minutes.
+  - `vino-api`: `/api/v1/auth/me` must return 401 `not_authenticated`, every 5 minutes.
+  - Failures alert Discord `#vino-alerts` through a Grafana contact point. This is the main outage alert: it's independent of GitHub, which ran the scheduled health check only every few hours during the Nov 15 game day.
+  - Each check has a dashboard with uptime, reachability per location and response time. About 60,000 check runs a month, within the free 100,000.
+- **Scheduled health check** (`health.yml`, GitHub Actions): the site, the API, the last successful backup (older than 30 hours alerts), and the share of 5xx responses over the last 15 minutes (over 5% with at least 20 requests alerts). Problems post to Discord, and the failed run also triggers GitHub's failure email. Scheduled every 15 minutes, but GitHub runs it only every few hours, so it's a backstop for the backup and error-rate checks rather than the outage alert.
 - **Backup failures** alert Discord straight away.
 - See [incident-response.md](incident-response.md) for what to do when an alert fires.
 
@@ -80,5 +85,5 @@ Each token does one job, so a leak is contained: the backup token can't deploy, 
 - **No security headers beyond HSTS and `nosniff`** (for example, no Content-Security-Policy). Deferred nice-to-have.
 - **Terraform state has no versioning or lock.** One person runs Terraform, and the workflow never runs two jobs at once.
 - **GitHub Pages publishes the repository** at `johnrochester-git.github.io/vino-mangement-app`. Nothing secret is in the repo, but it's a second, non-working copy of the site. Decision pending with the repo owner.
-- **Scheduled checks can start late.** GitHub delays scheduled workflows when busy (the Nov 11 backup started almost 8 hours late), so alerts usually arrive within 15 minutes but aren't guaranteed to.
+- **GitHub scheduled jobs start late.** Every scheduled backup so far started 7–10 hours after 07:00 UTC, and the 15-minute health check ran only every few hours. Grafana's checks cover outage alerting; backups still run once a day, within the 30-hour RPO.
 - **Wrangler on the maintainer's laptop** is logged in with broad OAuth permissions. Day-to-day deploys go through the pipeline's narrower token.
