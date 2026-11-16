@@ -30,6 +30,7 @@ Zone settings can't be deleted by Terraform: removing one from the code leaves i
 
 - **Passwords** are stored only as salted hashes, using Werkzeug's `generate_password_hash`. With the pinned Werkzeug 3.1.9 that's scrypt (`scrypt:32768:8:1`), checked Nov 16.
 - **Sessions** are random tokens in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie. The database stores only a SHA-256 hash of each token. Sessions last 14 days.
+- **Sign in with Google** uses OpenID Connect's authorization code flow with PKCE. Each sign-in gets a one-time `state` (stored hashed, valid 10 minutes, usable once) against forged or replayed callbacks, and a `nonce` that must come back inside the ID token. The backend swaps the code for the ID token directly with Google over HTTPS, then checks the issuer, audience (our client ID), expiry, nonce and that Google has verified the email. Only verified emails can link a Google sign-in to an existing password account. Accounts created through Google have no usable password. The result is the same session as a password login. Details: [api.md](api.md#sign-in-with-google).
 - **The D1 bridge isn't public.** The backend reaches the database through the Worker's outbound handler for `d1.internal`, which only the container can call. The public Worker routes only `/api/*` and `/health` to the container.
 - **Only `frontend/` is published as the website**, so code, config and `.git` are never served by the Worker.
 - **The container runs as a non-root user** (`appuser`).
@@ -46,6 +47,7 @@ No secrets are in the repository. Gitleaks scans the full history on every pull 
 | Analytics token | `health.yml` | Zone `vinowine.org`: Analytics Read | GitHub secret `CF_ANALYTICS_TOKEN` |
 | R2 state keys | Terraform state backend | Object Read & Write on `vino-terraform-state` only | GitHub secrets `TF_STATE_ACCESS_KEY_ID`, `TF_STATE_SECRET_ACCESS_KEY` |
 | Discord webhook | `health.yml`, `backup.yml` | Can post to `#vino-alerts` only | GitHub secret `DISCORD_WEBHOOK_URL` |
+| Google OAuth client secret | The backend, for Google sign-in | Swaps sign-in codes for ID tokens for this app's Google client only | Wrangler secret `GOOGLE_CLIENT_SECRET`, set separately for live and preview |
 | Account ID | All Cloudflare workflows | Not a credential | GitHub secret `CLOUDFLARE_ACCOUNT_ID` |
 
 Each token does one job, so a leak is contained: the backup token can't deploy, the deploy token can't change zone settings, and the analytics token can only read traffic numbers.

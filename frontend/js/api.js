@@ -113,6 +113,8 @@ function firstErrorMessage(err) {
 
 function getMe() { return api('GET', '/auth/me'); }
 
+function getAuthProviders() { return api('GET', '/auth/providers'); }
+
 function login(userEmail, password) {
   return api('POST', '/auth/login', { userEmail, password });
 }

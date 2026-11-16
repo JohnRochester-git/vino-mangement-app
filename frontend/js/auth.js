@@ -112,6 +112,31 @@ document.addEventListener('DOMContentLoaded', () => {
     alertBanner.style.display = 'none';
   }
 
+  // ---- Sign in with Google ----
+  // The button is a plain link to the backend, which sends the browser on to
+  // Google and, afterwards, back to the welcome page. Shown only when the
+  // backend has Google switched on.
+  const googleSignin = document.getElementById('googleSignin');
+  const googleSigninBtn = document.getElementById('googleSigninBtn');
+  if (googleSignin && googleSigninBtn) {
+    googleSigninBtn.href = API_BASE + '/auth/google/start';
+    getAuthProviders()
+      .then((providers) => { if (providers.google) googleSignin.classList.add('visible'); })
+      .catch(() => {}); // no button if the server can't say
+  }
+
+  // Coming back from Google with a problem: the backend adds ?error=...
+  const GOOGLE_ERRORS = {
+    google_cancelled: 'Google sign-in was cancelled. You can try again, or sign in with your email and password.',
+    google_failed: 'Google sign-in didn\'t work. Please try again.',
+    google_unavailable: 'Google sign-in isn\'t available right now. Please sign in with your email and password.'
+  };
+  const loginError = new URLSearchParams(window.location.search).get('error');
+  if (loginError && GOOGLE_ERRORS[loginError]) {
+    showAlert(GOOGLE_ERRORS[loginError]);
+    window.history.replaceState(null, '', window.location.pathname); // don't show it again on reload
+  }
+
   // ---- Already logged in? Skip straight to the welcome page ----
   getMe()
     .then(() => { window.location.href = 'welcome.html'; })

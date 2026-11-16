@@ -16,6 +16,14 @@
   // www.vinowine.org, so a second public address would bypass them.
   "workers_dev": false,
 
+  // Sign in with Google. The client ID isn't secret; the client secret is set
+  // with `npx wrangler secret put GOOGLE_CLIENT_SECRET --env=""`.
+  // Google sign-in stays off until all three are set.
+  "vars": {
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_REDIRECT_URI": "https://www.vinowine.org/api/v1/auth/google/callback"
+  },
+
   // Only files in frontend/ are published as the website.
   "assets": { "directory": "../frontend", "binding": "ASSETS" },
 
@@ -55,6 +63,12 @@
     "preview": {
       // No routes: the preview must never take over www.vinowine.org.
       "routes": [],
+      // Same Google client as live; its secret is set separately for this
+      // environment (`npx wrangler secret put GOOGLE_CLIENT_SECRET --env preview`).
+      "vars": {
+        "GOOGLE_CLIENT_ID": "",
+        "GOOGLE_REDIRECT_URI": "https://vino-preview.noahvastola.workers.dev/api/v1/auth/google/callback"
+      },
 
       "version_metadata": { "binding": "CF_VERSION" },
       "containers": [

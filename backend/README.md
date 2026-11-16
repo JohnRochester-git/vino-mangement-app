@@ -145,6 +145,10 @@ Settings come from environment variables, not from the code. `.env.example` list
 | `BARCODE_PROVIDER` | `none` or `openfoodfacts` | `none` |
 | `BARCODE_API_KEY` | Reserved for a barcode service that needs a key. Open Food Facts doesn't. | none |
 | `BARCODE_CONTACT` | Team email sent to Open Food Facts, which its terms ask for | none |
+| `GOOGLE_CLIENT_ID` | Google sign-in: the OAuth client ID from Google Cloud | none (Google sign-in off) |
+| `GOOGLE_CLIENT_SECRET` | Google sign-in: the client secret. Secret; on Cloudflare it's a Wrangler secret. | none |
+| `GOOGLE_REDIRECT_URI` | Google sign-in: the callback address, exactly as registered with Google | none |
+| `FRONTEND_URL` | Where the pages are, if not on the API's own site (local development: `http://localhost:5500`) | none (same site) |
 | `DEMO_EMAIL`, `DEMO_PASSWORD` | Login for the demo data | `demo@example.com`, none |
 
 `PORT` is gone. The development server and gunicorn both use port 8000, and the Docker setup and Cloudflare expect 8000.
