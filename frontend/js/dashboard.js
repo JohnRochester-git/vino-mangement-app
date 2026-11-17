@@ -488,8 +488,10 @@ async function renderUncorkHistory() {
   const profileBottlesUncorked = document.getElementById('profileBottlesUncorked');
   if (!container) return;
 
+  const profileUncorkBtnBadge = document.getElementById('profileUncorkBtnBadge');
   if (countBadge) countBadge.textContent = '…';
   if (profileBottlesUncorked) profileBottlesUncorked.textContent = '…';
+  if (profileUncorkBtnBadge) profileUncorkBtnBadge.textContent = '…';
 
   let log;
   try {
@@ -498,6 +500,7 @@ async function renderUncorkHistory() {
   } catch (err) {
     if (countBadge) countBadge.textContent = '—';
     if (profileBottlesUncorked) profileBottlesUncorked.textContent = '—';
+    if (profileUncorkBtnBadge) profileUncorkBtnBadge.textContent = '—';
     container.innerHTML = `<div class="uncork-empty-state"><p>The tasting journal couldn't be loaded.</p><span>${escapeHtml(firstErrorMessage(err))}</span></div>`;
     return;
   }
@@ -506,6 +509,7 @@ async function renderUncorkHistory() {
 
   if (countBadge) countBadge.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
   if (profileBottlesUncorked) profileBottlesUncorked.textContent = `${count} ${count === 1 ? 'bottle enjoyed' : 'bottles enjoyed'}`;
+  if (profileUncorkBtnBadge) profileUncorkBtnBadge.textContent = `${count} enjoyed`;
 
   if (count === 0) {
     container.innerHTML = `
@@ -641,6 +645,46 @@ function openProfileModal() {
 
 function closeProfileModal() {
   const modal = document.getElementById('profileModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// ----------------------------------------------------
+// RECENTLY UNCORKED JOURNAL MODAL
+// ----------------------------------------------------
+function openUncorkJournalModal() {
+  const modal = document.getElementById('uncorkJournalModal');
+  if (!modal) return;
+  renderUncorkHistory();
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeUncorkJournalModal() {
+  const modal = document.getElementById('uncorkJournalModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// ----------------------------------------------------
+// HOUSEHOLD & CELLAR SHARING MODAL
+// ----------------------------------------------------
+function openHouseholdModal() {
+  const modal = document.getElementById('householdModal');
+  if (!modal) return;
+  renderHouseholdMembers();
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHouseholdModal() {
+  const modal = document.getElementById('householdModal');
+  if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
@@ -1262,6 +1306,22 @@ function openRecommendModal() {
     }
   });
 
+  document.querySelectorAll('#recTypeChips .select-chip').forEach(c => {
+    if (c.getAttribute('data-val') === 'Any') {
+      c.classList.add('selected');
+    } else {
+      c.classList.remove('selected');
+    }
+  });
+
+  document.querySelectorAll('#recTierChips .select-chip').forEach(c => {
+    if (c.getAttribute('data-val') === 'Any') {
+      c.classList.add('selected');
+    } else {
+      c.classList.remove('selected');
+    }
+  });
+
   const formView = document.getElementById('recommendFormView');
   const resultView = document.getElementById('recommendResultView');
   if (formView) formView.style.display = 'block';
@@ -1347,7 +1407,111 @@ function isDrinkNow(w) {
   return status === 'ready' || status === 'drinkSoon' || status === 'pastPeak';
 }
 
-function calculateWineRecommendation(mealText, foodCategories, occasion) {
+// Serving & Decanting Advice (Update 3: Virtual Sommelier)
+function getServingAndDecantAdvice(wine) {
+  if (!wine) {
+    return {
+      temp: '60–65°F (Room Temp)',
+      decant: 'Pop & Pour',
+      glass: 'Standard Wine Glass',
+      tip: 'Serve at comfortable cellar room temperature.'
+    };
+  }
+
+  const type = (wine.type || '').toLowerCase();
+  const varietal = (wine.varietal || '').toLowerCase();
+  const currentYear = new Date().getFullYear();
+  const vintage = Number(wine.vintage) || currentYear;
+  const age = Math.max(0, currentYear - vintage);
+
+  if (type.includes('sparkling') || type.includes('champagne') || varietal.includes('prosecco') || varietal.includes('cava')) {
+    return {
+      temp: '42–46°F (Well Chilled)',
+      decant: 'No Decanting',
+      glass: 'Flute or Tulip / White Stem',
+      tip: 'Chill thoroughly; pop gently at a 45° angle to preserve the delicate mousse and effervescence.'
+    };
+  }
+
+  if (type.includes('rosé') || type.includes('rose')) {
+    return {
+      temp: '46–50°F (Chilled)',
+      decant: 'Pop & Pour',
+      glass: 'White or Rosé Stem',
+      tip: 'Serve fresh and cool to accentuate bright red berry fruit and crisp acidity.'
+    };
+  }
+
+  if (type.includes('white')) {
+    const isRichWhite = varietal.includes('chardonnay') || varietal.includes('viognier') || varietal.includes('roussanne') || varietal.includes('semillon');
+    if (isRichWhite) {
+      return {
+        temp: '50–54°F (Lightly Chilled)',
+        decant: '15 Mins (Optional)',
+        glass: 'Wide-Bowl Montrachet',
+        tip: 'Allow slight cellar warmth so toasted oak, stone fruit, and buttery aromatics can fully express.'
+      };
+    }
+    return {
+      temp: '45–49°F (Chilled)',
+      decant: 'Pop & Pour',
+      glass: 'Standard White Stem',
+      tip: 'Serve chilled to maintain vibrant citrus clarity and crisp mineral backbone.'
+    };
+  }
+
+  if (type.includes('dessert') || type.includes('port') || type.includes('sherry') || varietal.includes('ice wine') || varietal.includes('sauternes')) {
+    return {
+      temp: type.includes('port') ? '60–64°F (Cellar Temp)' : '48–52°F (Chilled)',
+      decant: 'Pop & Pour',
+      glass: 'Dessert / Port Stem',
+      tip: 'Serve in tapered dessert stems to concentrate rich honeyed and dried fruit nuances.'
+    };
+  }
+
+  // Red Wines
+  if (age >= 10 || vintage <= 2016) {
+    return {
+      temp: '62–66°F (Cellar Ambient)',
+      decant: '30–45 Mins (Gentle)',
+      glass: 'Grand Cru / Bordeaux',
+      tip: 'Decant gently against a light source to leave sediment behind while letting delicate tertiary notes awaken.'
+    };
+  }
+
+  const isBoldRed = varietal.includes('cabernet') || varietal.includes('syrah') || varietal.includes('shiraz') ||
+                    varietal.includes('nebbiolo') || varietal.includes('barolo') || varietal.includes('malbec') ||
+                    varietal.includes('bordeaux') || varietal.includes('zinfandel') || varietal.includes('tempranillo');
+
+  if (isBoldRed) {
+    return {
+      temp: '60–65°F (Cool Cellar)',
+      decant: '45–60 Mins',
+      glass: 'Bordeaux Stem',
+      tip: 'A vigorous decant softens firm young tannins and allows opulent cassis and dark fruit layers to unfold.'
+    };
+  }
+
+  const isLightRed = varietal.includes('pinot') || varietal.includes('gamay') || varietal.includes('grenache') || varietal.includes('beaujolais');
+  if (isLightRed) {
+    return {
+      temp: '56–60°F (Slight Cellar Chill)',
+      decant: '15–20 Mins',
+      glass: 'Burgundy Balloon Stem',
+      tip: 'Serve with a gentle cellar chill in a wide balloon bowl to highlight delicate floral and red cherry perfumes.'
+    };
+  }
+
+  // Standard / Medium Red (Merlot, blends)
+  return {
+    temp: '60–64°F (Cellar Room Temp)',
+    decant: '20–30 Mins',
+    glass: 'Standard Red Stem',
+    tip: 'A 20-minute decant rounds out the alcohol and releases rounded plum, herbal, and vanilla notes.'
+  };
+}
+
+function calculateWineRecommendation(mealText, foodCategories, occasion, typePref = 'Any', tierPref = 'Any') {
   // Only recommend bottles still in the cellar (the list includes finished ones).
   const available = (cellar || []).filter(w => (Number(w.quantity) || 0) > 0);
   if (available.length === 0) return null;
@@ -1355,8 +1519,9 @@ function calculateWineRecommendation(mealText, foodCategories, occasion) {
   const lowerMeal = (mealText || '').toLowerCase();
 
   const scored = available.map(w => {
-    let score = 20; // baseline
+    let score = 25; // baseline
     const winePairings = (w.pairings || []).map(p => p.toLowerCase());
+    const wineType = (w.type || '').toLowerCase();
 
     // 1. Food category matching
     foodCategories.forEach(f => {
@@ -1389,12 +1554,35 @@ function calculateWineRecommendation(mealText, foodCategories, occasion) {
       if (w.quantity >= 2) score += 20;
     }
 
-    // 4. Stock availability bonus
+    // 4. Wine Style Preference (Update 4)
+    if (typePref && typePref !== 'Any') {
+      const cleanPref = typePref.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const cleanType = wineType.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (cleanType.includes(cleanPref) || cleanPref.includes(cleanType)) {
+        score += 80;
+      } else {
+        score -= 50;
+      }
+    }
+
+    // 5. Cellar Tier Preference (Update 4)
+    const currentPrice = Number(w.price) || 0;
+    const currentYear = new Date().getFullYear();
+    const wineAge = w.vintage ? currentYear - Number(w.vintage) : 0;
+    if (tierPref === 'Casual') {
+      if (currentPrice > 0 && currentPrice <= 65) score += 50;
+      else if (currentPrice > 120) score -= 35;
+    } else if (tierPref === 'Reserve') {
+      if (currentPrice >= 95 || wineAge >= 8) score += 50;
+      else if (currentPrice > 0 && currentPrice <= 40) score -= 30;
+    }
+
+    // 6. Stock availability bonus
     if (w.quantity > 0) score += 15;
 
-    // 5. Maturity suitability bonus
+    // 7. Maturity suitability bonus
     if (isDrinkNow(w)) {
-      score += 10;
+      score += 12;
     }
 
     return { wine: w, score };
@@ -1402,70 +1590,139 @@ function calculateWineRecommendation(mealText, foodCategories, occasion) {
 
   scored.sort((a, b) => b.score - a.score);
 
-  const topWine = scored[0].wine;
-  const altWine = scored.length > 1 && scored[1].score > 25 ? scored[1].wine : null;
-  const confidence = Math.min(98, Math.max(84, 78 + Math.round(scored[0].score / 3.5)));
+  // BUILD THE MATCH TRIO (Update 5)
+  // 1. Sommelier Top Pick: highest scoring wine
+  const topCandidate = scored[0];
+  const topWine = topCandidate.wine;
+  const confidence = Math.min(99, Math.max(82, 75 + Math.round(topCandidate.score / 3.2)));
+
+  const trio = [];
+  trio.push({
+    badge: '🥇 Sommelier Pick',
+    roleTitle: 'Sommelier Choice',
+    tagline: 'Best pairing chemistry & occasion harmony',
+    wine: topWine,
+    confidence: confidence
+  });
+
+  // Secondary candidates (must be distinct wines)
+  const remainingScored = scored.slice(1);
+
+  if (remainingScored.length > 0) {
+    // 2. Pick 2: Drink Tonight or Everyday Value Pick
+    const drinkNowCandidate = remainingScored.find(s => isDrinkNow(s.wine));
+    let secondCandidate = null;
+    let secondBadge = '⏳ Drink Tonight';
+    let secondTagline = 'Optimal maturity window — uncap tonight';
+
+    if (drinkNowCandidate) {
+      secondCandidate = drinkNowCandidate;
+    } else {
+      const sortedByPrice = [...remainingScored].sort((a, b) => (Number(a.wine.price) || 0) - (Number(b.wine.price) || 0));
+      secondCandidate = sortedByPrice[0];
+      secondBadge = '💰 Value Pick';
+      secondTagline = 'Approachable, food-friendly cellar favorite';
+    }
+
+    if (secondCandidate) {
+      const secConf = Math.min(96, Math.max(76, 70 + Math.round(secondCandidate.score / 3.5)));
+      trio.push({
+        badge: secondBadge,
+        roleTitle: secondBadge.includes('Drink') ? 'Peak Drink Window' : 'Everyday Value',
+        tagline: secondTagline,
+        wine: secondCandidate.wine,
+        confidence: secConf
+      });
+    }
+
+    // 3. Pick 3: Cellar Reserve Pick (distinct from pick 1 & pick 2)
+    const usedIds = new Set(trio.map(t => t.wine.id));
+    const poolForThird = remainingScored.filter(s => !usedIds.has(s.wine.id));
+
+    if (poolForThird.length > 0) {
+      const reserveSorted = [...poolForThird].sort((a, b) => {
+        const pDiff = (Number(b.wine.price) || 0) - (Number(a.wine.price) || 0);
+        if (pDiff !== 0) return pDiff;
+        return (Number(a.wine.vintage) || 9999) - (Number(b.wine.vintage) || 9999);
+      });
+
+      const thirdCandidate = reserveSorted[0];
+      const thirdConf = Math.min(97, Math.max(78, 72 + Math.round(thirdCandidate.score / 3.5)));
+      trio.push({
+        badge: '🌟 Cellar Reserve',
+        roleTitle: 'Cellar Reserve',
+        tagline: 'Premium vintage with exceptional depth',
+        wine: thirdCandidate.wine,
+        confidence: thirdConf
+      });
+    }
+  }
 
   return {
+    trio,
+    activeIndex: 0,
     topWine,
-    altWine,
-    confidence,
     foodCategories,
     occasion,
-    mealText
+    mealText,
+    typePref,
+    tierPref
   };
 }
 
-function renderRecommendationResult(data) {
+function renderRecommendationResult(data, activeIndex = 0) {
   const container = document.getElementById('recommendResultContent');
   if (!container) return;
 
-  if (!data || !data.topWine) {
+  if (!data || !data.trio || data.trio.length === 0) {
     container.innerHTML = `
       <div class="empty-state" style="padding: 40px 20px;">
         <h3>No Matching Wines Found</h3>
-        <p>Your cellar doesn't have an available bottle right now. Add more wines to enable pairing recommendations!</p>
+        <p>Your cellar doesn't have an available bottle right now matching this criteria. Try adjusting your preferences or adding more bottles!</p>
       </div>
     `;
     return;
   }
 
-  currentRecommendedWineId = data.topWine.id;
-  const wine = data.topWine;
+  data.activeIndex = Math.max(0, Math.min(activeIndex, data.trio.length - 1));
+  const activeMatch = data.trio[data.activeIndex];
+  const wine = activeMatch.wine;
+  currentRecommendedWineId = wine.id;
+
   const typeClass = (wine.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const qty = Number(wine.quantity) || 0;
   const qtyStr = qty === 1 ? '1 bottle in cellar' : `${qty} bottles in cellar`;
   const rationale = getSommelierRationale(wine, data.foodCategories, data.occasion, data.mealText);
+  const service = getServingAndDecantAdvice(wine);
 
-  let altHtml = '';
-  if (data.altWine && data.altWine.id !== wine.id) {
-    const alt = data.altWine;
-    altHtml = `
-      <div style="margin-top: 16px;">
-        <div style="font-size: 11.5px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">
-          Alternative Cellar Option
-        </div>
-        <div class="rec-alternative-card">
-          <div>
-            <div style="color: #fff; font-size: 14px; font-weight: 500;">${escapeHtml(alt.name)} (${formatVintage(alt.vintage)})</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              ${escapeHtml(alt.varietal)} • ${escapeHtml(alt.type)} • ${escapeHtml(formatPrice(alt.price))}
-            </div>
-          </div>
-          <button type="button" class="btn-ghost" style="padding: 6px 14px; font-size: 12px;" onclick="switchRecommendedWine(${Number(alt.id)})">
-            Switch to This
-          </button>
-        </div>
+  // Render Trio Nav Tabs (Update 5)
+  let trioNavHtml = '';
+  if (data.trio.length > 1) {
+    trioNavHtml = `
+      <div class="rec-trio-nav" role="tablist" aria-label="Sommelier Recommendation Trio">
+        ${data.trio.map((item, idx) => {
+          const isActive = idx === data.activeIndex;
+          const w = item.wine;
+          return `
+            <button type="button" class="rec-trio-btn ${isActive ? 'active' : ''}" onclick="switchRecommendedTrio(${idx})" role="tab" aria-selected="${isActive}">
+              <div class="rec-trio-badge">${item.badge}</div>
+              <div class="rec-trio-title">${escapeHtml(w.name)}</div>
+              <div class="rec-trio-sub">${formatVintage(w.vintage)} • $${Number(w.price).toLocaleString()}</div>
+            </button>
+          `;
+        }).join('')}
       </div>
     `;
   }
 
   container.innerHTML = `
+    ${trioNavHtml}
+
     <div class="rec-match-badge">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/>
       </svg>
-      Sommelier Choice • ${data.confidence}% Pairing Match
+      ${escapeHtml(activeMatch.roleTitle)} • ${activeMatch.confidence}% Pairing Match
     </div>
 
     <div class="rec-wine-card">
@@ -1495,6 +1752,48 @@ function renderRecommendationResult(data) {
       </div>
     </div>
 
+    <!-- UPDATE 3: VIRTUAL SOMMELIER SERVICE GUIDE -->
+    <div class="rec-service-box">
+      <div class="rec-service-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Virtual Sommelier Service & Decanting Guide
+      </div>
+      <div class="rec-service-grid">
+        <div class="rec-service-item">
+          <span class="rec-service-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+            Serving Temp
+          </span>
+          <span class="rec-service-val">${escapeHtml(service.temp)}</span>
+        </div>
+        <div class="rec-service-item">
+          <span class="rec-service-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Decanting
+          </span>
+          <span class="rec-service-val">${escapeHtml(service.decant)}</span>
+        </div>
+        <div class="rec-service-item">
+          <span class="rec-service-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 3h10l-1 8a4 4 0 01-8 0z"/>
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+              <path d="M7 4h10l-2 9a3 3 0 01-6 0z" />
+            </svg>
+            Glassware
+          </span>
+          <span class="rec-service-val">${escapeHtml(service.glass)}</span>
+        </div>
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 10px; font-style: italic; line-height: 1.4;">
+        💡 ${escapeHtml(service.tip)}
+      </div>
+    </div>
+
+    <!-- PAIRING RATIONALE -->
     <div class="rec-rationale-box">
       <div class="rec-rationale-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1504,20 +1803,20 @@ function renderRecommendationResult(data) {
       </div>
       <p class="rec-rationale-text">${escapeHtml(rationale)}</p>
     </div>
-
-    ${altHtml}
   `;
 }
 
+window.switchRecommendedTrio = function(idx) {
+  if (!lastRecommendationData || !lastRecommendationData.trio) return;
+  renderRecommendationResult(lastRecommendationData, idx);
+};
+
 window.switchRecommendedWine = function(wineId) {
-  const targetWine = cellar.find(w => w.id === wineId);
-  if (!targetWine || !lastRecommendationData) return;
-
-  const currentTop = lastRecommendationData.topWine;
-  lastRecommendationData.topWine = targetWine;
-  lastRecommendationData.altWine = currentTop;
-
-  renderRecommendationResult(lastRecommendationData);
+  if (!lastRecommendationData || !lastRecommendationData.trio) return;
+  const matchIdx = lastRecommendationData.trio.findIndex(t => t.wine.id === wineId);
+  if (matchIdx !== -1) {
+    renderRecommendationResult(lastRecommendationData, matchIdx);
+  }
 };
 
 function handleRecommendSubmit() {
@@ -1534,16 +1833,22 @@ function handleRecommendSubmit() {
   const occasionChip = document.querySelector('#recOccasionChips .select-chip.selected');
   const occasion = occasionChip ? occasionChip.getAttribute('data-val') : 'Casual Dinner';
 
+  const typeChip = document.querySelector('#recTypeChips .select-chip.selected');
+  const typePref = typeChip ? typeChip.getAttribute('data-val') : 'Any';
+
+  const tierChip = document.querySelector('#recTierChips .select-chip.selected');
+  const tierPref = tierChip ? tierChip.getAttribute('data-val') : 'Any';
+
   if (!mealText && combinedFoods.length === 0) {
     showToast('Please describe your dish or choose a food category.');
     if (mealInput) mealInput.focus();
     return;
   }
 
-  const result = calculateWineRecommendation(mealText, combinedFoods, occasion);
+  const result = calculateWineRecommendation(mealText, combinedFoods, occasion, typePref, tierPref);
   lastRecommendationData = result;
 
-  renderRecommendationResult(result);
+  renderRecommendationResult(result, 0);
 
   const formView = document.getElementById('recommendFormView');
   const resultView = document.getElementById('recommendResultView');
@@ -1936,6 +2241,10 @@ async function renderHouseholdMembers() {
     const members = data.members || [];
     if (countBadge) {
       countBadge.textContent = `${members.length} ${members.length === 1 ? 'Member' : 'Members'}`;
+    }
+    const profileHouseholdBtnBadge = document.getElementById('profileHouseholdBtnBadge');
+    if (profileHouseholdBtnBadge) {
+      profileHouseholdBtnBadge.textContent = `${members.length} ${members.length === 1 ? 'Member' : 'Members'}`;
     }
 
     if (members.length === 0) {
@@ -2368,6 +2677,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.querySelectorAll('#recTypeChips .select-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#recTypeChips .select-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  });
+
+  document.querySelectorAll('#recTierChips .select-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#recTierChips .select-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  });
+
   // Wire Add Wine Button
   const openAddWineBtnHero = document.getElementById('openAddWineBtnHero');
   if (openAddWineBtnHero) {
@@ -2600,6 +2923,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Wire Recently Uncorked Journal modal controls
+  const openUncorkJournalBtn = document.getElementById('openUncorkJournalBtn');
+  if (openUncorkJournalBtn) {
+    openUncorkJournalBtn.addEventListener('click', () => {
+      closeActionDropdown();
+      openUncorkJournalModal();
+    });
+  }
+
+  const profileOpenUncorkBtn = document.getElementById('profileOpenUncorkBtn');
+  if (profileOpenUncorkBtn) {
+    profileOpenUncorkBtn.addEventListener('click', () => {
+      closeProfileModal();
+      openUncorkJournalModal();
+    });
+  }
+
+  const closeUncorkJournalBtn = document.getElementById('closeUncorkJournalBtn');
+  if (closeUncorkJournalBtn) closeUncorkJournalBtn.addEventListener('click', closeUncorkJournalModal);
+
+  const closeUncorkJournalDoneBtn = document.getElementById('closeUncorkJournalDoneBtn');
+  if (closeUncorkJournalDoneBtn) closeUncorkJournalDoneBtn.addEventListener('click', closeUncorkJournalModal);
+
+  const uncorkJournalModal = document.getElementById('uncorkJournalModal');
+  if (uncorkJournalModal) {
+    uncorkJournalModal.addEventListener('click', (e) => {
+      if (e.target.id === 'uncorkJournalModal') closeUncorkJournalModal();
+    });
+  }
+
+  // Wire Household & Cellar Sharing modal controls
+  const openHouseholdBtn = document.getElementById('openHouseholdBtn');
+  if (openHouseholdBtn) {
+    openHouseholdBtn.addEventListener('click', () => {
+      closeActionDropdown();
+      openHouseholdModal();
+    });
+  }
+
+  const profileOpenHouseholdBtn = document.getElementById('profileOpenHouseholdBtn');
+  if (profileOpenHouseholdBtn) {
+    profileOpenHouseholdBtn.addEventListener('click', () => {
+      closeProfileModal();
+      openHouseholdModal();
+    });
+  }
+
+  const closeHouseholdBtn = document.getElementById('closeHouseholdBtn');
+  if (closeHouseholdBtn) closeHouseholdBtn.addEventListener('click', closeHouseholdModal);
+
+  const closeHouseholdDoneBtn = document.getElementById('closeHouseholdDoneBtn');
+  if (closeHouseholdDoneBtn) closeHouseholdDoneBtn.addEventListener('click', closeHouseholdModal);
+
+  const householdModal = document.getElementById('householdModal');
+  if (householdModal) {
+    householdModal.addEventListener('click', (e) => {
+      if (e.target.id === 'householdModal') closeHouseholdModal();
+    });
+  }
+
   // Wire Household Member Invitation Form (Update 4)
   const inviteMemberForm = document.getElementById('inviteMemberForm');
   if (inviteMemberForm) inviteMemberForm.addEventListener('submit', handleInviteMemberSubmit);
@@ -2614,6 +2997,8 @@ document.addEventListener('DOMContentLoaded', () => {
       closeScannerModal();
       closeWishlistModal();
       closeCsvModal();
+      closeUncorkJournalModal();
+      closeHouseholdModal();
       closeActionDropdown();
 
       const sortMenu = document.getElementById('sortDropdownMenu');
