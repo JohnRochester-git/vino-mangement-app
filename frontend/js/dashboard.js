@@ -2924,14 +2924,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Wire Recently Uncorked Journal modal controls
-  const openUncorkJournalBtn = document.getElementById('openUncorkJournalBtn');
-  if (openUncorkJournalBtn) {
-    openUncorkJournalBtn.addEventListener('click', () => {
-      closeActionDropdown();
-      openUncorkJournalModal();
-    });
-  }
-
   const profileOpenUncorkBtn = document.getElementById('profileOpenUncorkBtn');
   if (profileOpenUncorkBtn) {
     profileOpenUncorkBtn.addEventListener('click', () => {
@@ -2954,14 +2946,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Wire Household & Cellar Sharing modal controls
-  const openHouseholdBtn = document.getElementById('openHouseholdBtn');
-  if (openHouseholdBtn) {
-    openHouseholdBtn.addEventListener('click', () => {
-      closeActionDropdown();
-      openHouseholdModal();
-    });
-  }
-
   const profileOpenHouseholdBtn = document.getElementById('profileOpenHouseholdBtn');
   if (profileOpenHouseholdBtn) {
     profileOpenHouseholdBtn.addEventListener('click', () => {
