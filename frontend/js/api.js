@@ -143,6 +143,8 @@ function consumeItem(itemId, quantity = 1, extra = {}) {
 
 function getValue(collectionId) { return api('GET', `/collections/${collectionId}/value`); }
 
+function getInsights(collectionId) { return api('GET', `/collections/${collectionId}/insights`); }
+
 function listConsumptions(collectionId) { return api('GET', `/collections/${collectionId}/consumptions`); }
 
 function getBlends() { return api('GET', '/blends'); }

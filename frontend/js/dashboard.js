@@ -471,6 +471,7 @@ function toUncorkEntry(c) {
   const dateStr = isNaN(when.getTime()) ? '' :
     `${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
   return {
+    id: c.consumeID,
     name: c.wineName,
     vintage: c.wineVint,
     type: c.wineType,
@@ -478,8 +479,37 @@ function toUncorkEntry(c) {
     varietal: wine.varietal || '',
     quantity: c.consumeQuantity,
     note: c.consumeNotes || '',
+    rating: typeof c.consumeRating === 'number' ? c.consumeRating : null,
     dateStr
   };
+}
+
+// Renders gold stars with 0.5-star precision using inline SVG
+function renderStarRating(rating) {
+  if (!rating || rating <= 0) return '';
+  const fullStars = Math.floor(rating);
+  const hasHalf = (rating % 1) >= 0.5;
+  const emptyStars = Math.max(0, 5 - fullStars - (hasHalf ? 1 : 0));
+
+  let stars = '';
+  for (let i = 0; i < fullStars; i++) {
+    stars += `<svg width="12" height="12" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+  }
+  if (hasHalf) {
+    stars += `<svg width="12" height="12" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.5">
+      <defs>
+        <linearGradient id="halfStarGradJournal">
+          <stop offset="50%" stop-color="var(--gold)"/>
+          <stop offset="50%" stop-color="transparent"/>
+        </linearGradient>
+      </defs>
+      <polygon fill="url(#halfStarGradJournal)" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>`;
+  }
+  for (let i = 0; i < emptyStars; i++) {
+    stars += `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(200, 163, 106, 0.35)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+  }
+  return `<span class="star-rating-icons">${stars}</span>`;
 }
 
 async function renderUncorkHistory() {
@@ -527,6 +557,12 @@ async function renderUncorkHistory() {
 
   container.innerHTML = log.map(entry => {
     const typeClass = (entry.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const ratingHtml = entry.rating !== null ? `
+      <div class="uncork-rating-badge" title="Rated ${entry.rating.toFixed(1)} out of 5 stars">
+        ${renderStarRating(entry.rating)}
+        <span class="uncork-rating-score">${entry.rating.toFixed(1)}</span>
+      </div>
+    ` : '';
     return `
       <div class="uncork-card">
         <div class="uncork-left">
@@ -541,6 +577,7 @@ async function renderUncorkHistory() {
               <h4 class="uncork-wine-name">${escapeHtml(entry.name)}</h4>
               ${entry.vintage ? `<span class="uncork-vintage">${entry.vintage} Vintage</span>` : ''}
               ${entry.quantity > 1 ? `<span class="uncork-vintage">${entry.quantity} bottles</span>` : ''}
+              ${ratingHtml}
             </div>
             <div class="uncork-region-line">
               <span>${escapeHtml(entry.region || entry.varietal || '')}</span>
@@ -632,6 +669,21 @@ function openProfileModal() {
     document.getElementById('profileOldestVintage').textContent = '—';
   }
 
+  // Average Tasting Rating from backend insights
+  const avgRatingEl = document.getElementById('profileAverageRating');
+  if (avgRatingEl) {
+    avgRatingEl.textContent = '…';
+    getInsights(collectionId).then(insights => {
+      if (insights && typeof insights.averageRating === 'number') {
+        avgRatingEl.textContent = `${insights.averageRating.toFixed(1)} ★ (${insights.ratingCount} ${insights.ratingCount === 1 ? 'bottle' : 'bottles'} rated)`;
+      } else {
+        avgRatingEl.textContent = 'No rated uncorks yet';
+      }
+    }).catch(() => {
+      if (avgRatingEl) avgRatingEl.textContent = '—';
+    });
+  }
+
   // Bottles enjoyed and the tasting journal, from the server
   renderUncorkHistory();
   renderHouseholdMembers();
@@ -688,6 +740,185 @@ function closeHouseholdModal() {
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
+}
+
+// ----------------------------------------------------
+// UNCORK & RATE BOTTLE MODAL
+// ----------------------------------------------------
+let uncorkTargetWine = null;
+let uncorkCurrentQty = 1;
+let uncorkSelectedRating = null;
+
+const RATING_LABELS = {
+  5: '5.0 ★ — Classic / Grand Cru',
+  4.5: '4.5 ★ — Exceptional',
+  4: '4.0 ★ — Excellent',
+  3.5: '3.5 ★ — Very Good',
+  3: '3.0 ★ — Good',
+  2.5: '2.5 ★ — Average',
+  2: '2.0 ★ — Below Average',
+  1.5: '1.5 ★ — Flawed',
+  1: '1.0 ★ — Poor'
+};
+
+function openUncorkModal(wineId) {
+  const wine = cellar.find(w => w.id === wineId);
+  if (!wine) return;
+
+  const modal = document.getElementById('uncorkModal');
+  if (!modal) return;
+
+  const avail = Number(wine.quantity) || 0;
+  if (avail <= 0) {
+    showToast(`"${wine.name}" is already depleted.`);
+    return;
+  }
+
+  uncorkTargetWine = wine;
+  uncorkCurrentQty = 1;
+  uncorkSelectedRating = null;
+
+  const nameEl = document.getElementById('uncorkWineName');
+  const metaEl = document.getElementById('uncorkWineMeta');
+  const tagEl = document.getElementById('uncorkWineTag');
+  const availEl = document.getElementById('uncorkAvailableQty');
+  const qtyVal = document.getElementById('uncorkQtyVal');
+  const qtySub = document.getElementById('uncorkQtySub');
+  const notesInput = document.getElementById('uncorkNotesInput');
+
+  if (nameEl) nameEl.textContent = wine.name;
+  if (metaEl) metaEl.textContent = `${formatVintage(wine.vintage)} • ${wine.varietal || wine.type || ''}`;
+  if (tagEl) {
+    const typeClass = (wine.type || 'red').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    tagEl.className = `bottle-tag ${typeClass}`;
+    tagEl.textContent = wine.type || 'Red';
+  }
+  if (availEl) availEl.textContent = `${avail} in cellar`;
+  if (qtyVal) qtyVal.textContent = '1';
+  if (qtySub) qtySub.textContent = 'Bottle';
+  if (notesInput) notesInput.value = '';
+
+  updateStarPickerUI(null);
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeUncorkModal() {
+  const modal = document.getElementById('uncorkModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function setUncorkRating(rating) {
+  uncorkSelectedRating = rating;
+  updateStarPickerUI(rating);
+}
+
+function updateStarPickerUI(rating) {
+  const display = document.getElementById('uncorkRatingDisplay');
+  if (display) {
+    if (rating && RATING_LABELS[rating]) {
+      display.textContent = RATING_LABELS[rating];
+    } else if (rating) {
+      display.textContent = `${rating.toFixed(1)} ★`;
+    } else {
+      display.textContent = 'Unrated (Optional)';
+    }
+  }
+
+  // Update star buttons
+  document.querySelectorAll('#starRatingPicker .star-btn').forEach(btn => {
+    const starIdx = Number(btn.getAttribute('data-star'));
+    btn.classList.remove('active');
+    const svg = btn.querySelector('svg');
+    if (!svg) return;
+
+    if (rating && starIdx <= Math.floor(rating)) {
+      btn.classList.add('active');
+      svg.innerHTML = `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`;
+      svg.setAttribute('fill', 'var(--gold)');
+      svg.setAttribute('stroke', 'var(--gold)');
+    } else if (rating && starIdx === Math.ceil(rating) && (rating % 1) >= 0.5) {
+      btn.classList.add('active');
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="starPickGrad">
+            <stop offset="50%" stop-color="var(--gold)"/>
+            <stop offset="50%" stop-color="transparent"/>
+          </linearGradient>
+        </defs>
+        <polygon fill="url(#starPickGrad)" stroke="var(--gold)" stroke-width="1.5" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      `;
+    } else {
+      svg.innerHTML = `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`;
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', 'currentColor');
+    }
+  });
+
+  // Update quick chips
+  document.querySelectorAll('#ratingQuickChips .rating-chip').forEach(chip => {
+    const val = Number(chip.getAttribute('data-rating'));
+    if (rating !== null && val === rating) {
+      chip.classList.add('selected');
+    } else {
+      chip.classList.remove('selected');
+    }
+  });
+}
+
+function stepUncorkQty(delta) {
+  if (!uncorkTargetWine) return;
+  const avail = Number(uncorkTargetWine.quantity) || 1;
+  const next = Math.max(1, Math.min(avail, uncorkCurrentQty + delta));
+  uncorkCurrentQty = next;
+  const qtyVal = document.getElementById('uncorkQtyVal');
+  const qtySub = document.getElementById('uncorkQtySub');
+  if (qtyVal) qtyVal.textContent = next;
+  if (qtySub) qtySub.textContent = next === 1 ? 'Bottle' : 'Bottles';
+}
+
+async function handleUncorkSubmit() {
+  if (!uncorkTargetWine || qtyRequestInFlight) return;
+  const wine = uncorkTargetWine;
+  const qtyToUncork = uncorkCurrentQty;
+  const rating = uncorkSelectedRating;
+  const notes = (document.getElementById('uncorkNotesInput')?.value || '').trim();
+
+  qtyRequestInFlight = true;
+  setQtyButtonsDisabled(true);
+
+  try {
+    const extra = {};
+    if (typeof rating === 'number' && rating >= 1 && rating <= 5) extra.rating = rating;
+    if (notes) extra.notes = notes;
+
+    const result = await consumeItem(wine.id, qtyToUncork, extra);
+    const updated = replaceWineFromItem(result.item);
+
+    updateStats();
+    renderMain();
+    if (activeWineId === updated.id) openOverview(updated.id);
+    refreshServerValue();
+
+    closeUncorkModal();
+
+    const starMsg = rating ? ` (Rated ${rating}★)` : '';
+    if (updated.quantity === 0) {
+      showToast(`Finished last bottle of ${updated.name}${starMsg}. Saved to your tasting journal!`);
+    } else {
+      showToast(`Enjoy the bottle! Uncorked ${qtyToUncork} bottle(s) of ${updated.name}${starMsg}.`);
+    }
+  } catch (err) {
+    showToast(firstErrorMessage(err));
+  } finally {
+    qtyRequestInFlight = false;
+    setQtyButtonsDisabled(false);
+  }
 }
 
 // ----------------------------------------------------
@@ -2797,7 +3028,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (modalDecBtn) modalDecBtn.addEventListener('click', () => adjustWineQty(-1));
 
   const uncorkBottleBtn = document.getElementById('uncorkBottleBtn');
-  if (uncorkBottleBtn) uncorkBottleBtn.addEventListener('click', () => adjustWineQty(-1));
+  if (uncorkBottleBtn) uncorkBottleBtn.addEventListener('click', () => {
+    if (activeWineId) openUncorkModal(activeWineId);
+  });
 
   const deleteWineBtn = document.getElementById('deleteWineBtn');
   if (deleteWineBtn) deleteWineBtn.addEventListener('click', deleteActiveWine);
@@ -2971,6 +3204,55 @@ document.addEventListener('DOMContentLoaded', () => {
   const inviteMemberForm = document.getElementById('inviteMemberForm');
   if (inviteMemberForm) inviteMemberForm.addEventListener('submit', handleInviteMemberSubmit);
 
+  // Wire Uncork & Rate Bottle Modal controls
+  const closeUncorkModalBtn = document.getElementById('closeUncorkModalBtn');
+  if (closeUncorkModalBtn) closeUncorkModalBtn.addEventListener('click', closeUncorkModal);
+
+  const cancelUncorkBtn = document.getElementById('cancelUncorkBtn');
+  if (cancelUncorkBtn) cancelUncorkBtn.addEventListener('click', closeUncorkModal);
+
+  const submitUncorkBtn = document.getElementById('submitUncorkBtn');
+  if (submitUncorkBtn) submitUncorkBtn.addEventListener('click', handleUncorkSubmit);
+
+  const uncorkDecQtyBtn = document.getElementById('uncorkDecQtyBtn');
+  if (uncorkDecQtyBtn) uncorkDecQtyBtn.addEventListener('click', () => stepUncorkQty(-1));
+
+  const uncorkIncQtyBtn = document.getElementById('uncorkIncQtyBtn');
+  if (uncorkIncQtyBtn) uncorkIncQtyBtn.addEventListener('click', () => stepUncorkQty(1));
+
+  const uncorkModal = document.getElementById('uncorkModal');
+  if (uncorkModal) {
+    uncorkModal.addEventListener('click', (e) => {
+      if (e.target.id === 'uncorkModal') closeUncorkModal();
+    });
+  }
+
+  // Star rating picker buttons
+  document.querySelectorAll('#starRatingPicker .star-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-star'));
+      if (uncorkSelectedRating === star) {
+        setUncorkRating(star - 0.5);
+      } else if (uncorkSelectedRating === star - 0.5) {
+        setUncorkRating(star);
+      } else {
+        setUncorkRating(star);
+      }
+    });
+  });
+
+  // Quick rating chips
+  document.querySelectorAll('#ratingQuickChips .rating-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (chip.id === 'clearRatingBtn') {
+        setUncorkRating(null);
+      } else {
+        const val = Number(chip.getAttribute('data-rating'));
+        setUncorkRating(val);
+      }
+    });
+  });
+
   // Close on Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -2983,6 +3265,7 @@ document.addEventListener('DOMContentLoaded', () => {
       closeCsvModal();
       closeUncorkJournalModal();
       closeHouseholdModal();
+      closeUncorkModal();
       closeActionDropdown();
 
       const sortMenu = document.getElementById('sortDropdownMenu');
