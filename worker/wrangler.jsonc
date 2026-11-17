@@ -63,6 +63,9 @@
     "preview": {
       // No routes: the preview must never take over www.vinowine.org.
       "routes": [],
+      // The preview's only address is workers.dev, so it stays on here
+      // (the top-level "workers_dev": false would otherwise be inherited).
+      "workers_dev": true,
       // Same Google client as live; its secret is set separately for this
       // environment (`npx wrangler secret put GOOGLE_CLIENT_SECRET --env preview`).
       "vars": {
