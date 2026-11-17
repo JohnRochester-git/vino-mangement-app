@@ -121,6 +121,34 @@
                 <span class="action-dropdown-sub">Instant lookup via camera or photo</span>
               </div>
             </button>
+
+            <!-- 4. Wishlist (Update 5) -->
+            <button class="action-dropdown-item" id="openWishlistBtn" type="button" role="menuitem">
+              <div class="action-dropdown-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div class="action-dropdown-text">
+                <span class="action-dropdown-title">Cellar Wishlist</span>
+                <span class="action-dropdown-sub">Track wines to buy, taste or hunt for</span>
+              </div>
+            </button>
+
+            <!-- 5. Import & Export CSV (Update 3) -->
+            <button class="action-dropdown-item" id="openCsvModalBtn" type="button" role="menuitem">
+              <div class="action-dropdown-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </div>
+              <div class="action-dropdown-text">
+                <span class="action-dropdown-title">Import & Export CSV</span>
+                <span class="action-dropdown-sub">Spreadsheet backup & bulk import</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -468,6 +496,42 @@
           </div>
           <div class="profile-uncork-list" id="profileUncorkList">
             <!-- Dynamically populated tasting history -->
+          </div>
+        </div>
+
+        <!-- Household & Cellar Sharing (Update 4) -->
+        <div class="profile-household-section">
+          <div class="profile-household-header">
+            <div class="profile-uncork-title-wrap">
+              <div class="profile-uncork-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Household & Cellar Sharing</span>
+              </div>
+              <div class="profile-uncork-sub">Share cellar access with partners, roommates or co-collectors</div>
+            </div>
+            <span class="profile-uncork-badge" id="householdCountBadge">1 Member</span>
+          </div>
+
+          <!-- Invite form (visible when user is cellar owner) -->
+          <form id="inviteMemberForm" class="household-invite-form">
+            <input type="email" id="inviteMemberEmail" class="household-invite-input" placeholder="partner@example.com" required>
+            <button type="submit" class="household-invite-btn" id="inviteMemberBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Invite</span>
+            </button>
+          </form>
+
+          <!-- Members List -->
+          <div class="household-members-list" id="householdMembersList">
+            <!-- Populated dynamically via GET /collections/{id}/members -->
           </div>
         </div>
 
@@ -872,6 +936,13 @@
             placeholder="Tasting profile, notes on acidity, fruit notes, oak aging, or pairing ideas..."></textarea>
         </div>
 
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="inputBarcode">Barcode (UPC / EAN)</label>
+            <input type="text" id="inputBarcode" class="form-input" placeholder="e.g. 089744000026 (filled when scanned, or enter manually)">
+          </div>
+        </div>
+
         <div class="modal-footer"
           style="padding: 16px 0 0; margin-top: 10px; background: transparent; border-top: 1px solid var(--hairline);">
           <button type="button" class="btn-ghost" id="cancelAddWineBtn">Cancel</button>
@@ -897,6 +968,168 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- CELLAR WISHLIST MODAL (Update 5)               -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="wishlistModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="wishlistModalTitle" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="wishlistModalTitle">Cellar Wishlist</h2>
+          <div class="modal-subtitle">Track coveted bottles to purchase, gift, or open on future milestones</div>
+        </div>
+        <button class="modal-close-btn" id="closeWishlistBtn" aria-label="Close wishlist">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 16px;">
+        <!-- Add to Wishlist Quick Form -->
+        <form id="addWishlistForm" class="wishlist-add-box">
+          <div style="font-size: 13px; font-weight: 600; color: var(--gold); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Wine to Wishlist</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="wishNameInput">Wine Name <span class="req">*</span></label>
+              <input type="text" id="wishNameInput" class="form-input" placeholder="e.g. Domaine de la Romanée-Conti" required>
+            </div>
+            <div class="form-group flex-1">
+              <label for="wishVintInput">Vintage</label>
+              <input type="number" id="wishVintInput" class="form-input" placeholder="e.g. 2018" min="1800" max="2200">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="wishProducerInput">Producer / Winery</label>
+              <input type="text" id="wishProducerInput" class="form-input" placeholder="e.g. Domaine Leroy">
+            </div>
+            <div class="form-group flex-2">
+              <label for="wishNotesInput">Tasting / Occasion Notes</label>
+              <input type="text" id="wishNotesInput" class="form-input" placeholder="e.g. Try for 40th birthday or anniversary">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button type="submit" class="btn-gold" id="submitWishBtn" style="padding: 7px 16px; font-size: 13px;">
+              Add to Wishlist
+            </button>
+          </div>
+        </form>
+
+        <!-- Wishlist Items List -->
+        <div class="wishlist-list-wrap">
+          <div class="wishlist-list-header">
+            <span class="wishlist-count-badge" id="wishlistCountBadge">0 saved</span>
+          </div>
+          <div class="wishlist-items-container" id="wishlistItemsContainer">
+            <!-- Populated dynamically via GET /collections/{id}/wishlist -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" id="cancelWishlistBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- CSV IMPORT & EXPORT MODAL (Update 3)            -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="csvModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="csvModalTitle" style="max-width: 600px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="csvModalTitle">Cellar Data & Backup</h2>
+          <div class="modal-subtitle">Export your collection for spreadsheets or bulk import new bottles</div>
+        </div>
+        <button class="modal-close-btn" id="closeCsvModalBtn" aria-label="Close CSV manager">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 16px;">
+        <!-- Two Panels: Export & Import -->
+        <div class="csv-section-box">
+          <div class="csv-section-header">
+            <div class="csv-section-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </div>
+            <div>
+              <div class="csv-section-title">Export Cellar to CSV</div>
+              <div class="csv-section-desc">Download a complete backup spreadsheet containing all bottles, vintages, values, drinking windows and cellar notes.</div>
+            </div>
+          </div>
+          <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+            <a href="#" class="btn-gold" id="downloadCsvBtn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Download CSV File</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="csv-section-box" style="margin-top: 18px;">
+          <div class="csv-section-header">
+            <div class="csv-section-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div>
+              <div class="csv-section-title">Import Spreadsheets into Cellar</div>
+              <div class="csv-section-desc">Upload a CSV file with columns: <code>wineName</code>, <code>wineType</code>, <code>itemQuantity</code> (plus optional vintage, price, region, notes).</div>
+            </div>
+          </div>
+
+          <form id="csvImportForm" style="margin-top: 14px;">
+            <div class="csv-file-dropzone" id="csvDropzone">
+              <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display: none;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="12" y2="12"></line>
+                <line x1="15" y1="15" x2="12" y2="12"></line>
+              </svg>
+              <div id="csvSelectedFileName" style="font-size: 13px; color: var(--gold); margin-top: 6px; font-weight: 500;">Click to select a CSV file</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">UTF-8 CSV up to 200 rows</div>
+            </div>
+
+            <div id="csvImportErrors" class="csv-errors-banner" style="display: none;"></div>
+
+            <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px;">
+              <button type="submit" class="btn-gold" id="submitCsvImportBtn" disabled>
+                <span>Upload & Import Bottles</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" id="cancelCsvModalBtn">Close</button>
+      </div>
     </div>
   </div>
 

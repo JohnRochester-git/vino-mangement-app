@@ -13,6 +13,9 @@ let searchQuery = '';
 let viewMode = 'grid'; // 'grid' or 'region'
 let currentUser = null;      // from GET /auth/me
 let collectionId = null;     // the user's first collection
+let currentMemberRole = 'owner'; // 'owner' or 'member'
+let currentScannedWineId = null; // if scanned wine is already in catalog
+let currentScannedWineName = null;
 let serverValueCents = null; // collection total from GET /collections/{id}/value
 let blendOptions = [];       // [{blendID, blendStyle}] from GET /blends
 let qtyRequestInFlight = false;
@@ -34,6 +37,8 @@ const FIELD_INPUTS = {
   'wine.wineRegion': 'inputRegion',
   'wine.wineVint': 'inputVintage',
   'wine.wineValue': 'inputPrice',
+  'wine.wineBarcode': 'inputBarcode',
+  'wineBarcode': 'inputBarcode',
   'itemQuantity': 'inputQty',
   'wine.wineDescription': 'inputNotes',
   'itemDrinkFrom': 'inputMaturity',
@@ -625,6 +630,7 @@ function openProfileModal() {
 
   // Bottles enjoyed and the tasting journal, from the server
   renderUncorkHistory();
+  renderHouseholdMembers();
 
   document.getElementById('profileEditBox').classList.remove('show');
 
@@ -912,28 +918,67 @@ async function onBarcodeScanSuccess(decodedText) {
 
 async function lookupWineByBarcode(barcode) {
   const cleanBarcode = String(barcode).trim();
-  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleanBarcode)}.json`;
+  currentScannedWineId = null;
+  currentScannedWineName = null;
+
+  const barcodeInput = document.getElementById('inputBarcode');
+  if (barcodeInput) barcodeInput.value = cleanBarcode;
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'VinoCellarApp/1.0 (StudentProject)'
+    const res = await lookupBarcode(cleanBarcode);
+    if (res && res.found && res.wine) {
+      const w = res.wine;
+      const nameInput = document.getElementById('inputName');
+      const typeSelect = document.getElementById('inputType');
+      const regionInput = document.getElementById('inputRegion');
+      const varietalInput = document.getElementById('inputVarietal');
+      const vintageInput = document.getElementById('inputVintage');
+      const priceInput = document.getElementById('inputPrice');
+      const notesInput = document.getElementById('inputNotes');
+
+      if (nameInput && w.wineName) nameInput.value = w.wineName;
+      if (typeSelect && w.wineType) typeSelect.value = w.wineType;
+      if (regionInput && w.wineRegion) regionInput.value = w.wineRegion;
+      if (varietalInput && (w.blendStyle || w.varietal)) varietalInput.value = w.blendStyle || w.varietal;
+      if (vintageInput && w.wineVint) vintageInput.value = w.wineVint;
+      if (priceInput && (w.wineValueCents !== undefined || w.wineValue !== undefined)) {
+        if (w.wineValueCents !== null && w.wineValueCents !== undefined) {
+          priceInput.value = (w.wineValueCents / 100).toFixed(2);
+        } else if (w.wineValue) {
+          priceInput.value = w.wineValue;
+        }
       }
-    });
+      if (notesInput && (w.wineDescription || w.wineProfile)) {
+        notesInput.value = w.wineDescription || w.wineProfile;
+      }
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Select pairings chips if returned from catalog
+      if (Array.isArray(w.pairings) && w.pairings.length > 0) {
+        document.querySelectorAll('#formPairChips .select-chip').forEach(chip => {
+          const val = chip.getAttribute('data-val');
+          if (w.pairings.some(p => p.toLowerCase() === val.toLowerCase())) {
+            chip.classList.add('selected');
+          }
+        });
+      }
 
-    const data = await res.json();
-    if (data.status === 1 && data.product) {
-      populateAddWineFormFromOFF(data.product, cleanBarcode);
+      if (res.source === 'catalog') {
+        currentScannedWineId = w.wineID;
+        currentScannedWineName = w.wineName;
+        showToast(`✓ Found "${w.wineName}" in Vino catalog!`);
+      } else {
+        showToast(`✓ Found in wine database! Please confirm details.`);
+      }
+
+      if (priceInput && !priceInput.value) priceInput.focus();
     } else {
-      showToast(`Product not found in Open Food Facts (${cleanBarcode}). Please enter details manually.`);
+      showToast(`No product found for barcode (${cleanBarcode}). Please enter details manually.`);
       const nameInput = document.getElementById('inputName');
       if (nameInput) nameInput.focus();
     }
   } catch (err) {
-    console.error("Open Food Facts lookup failed:", err);
-    showToast(`Could not query Open Food Facts. Please enter wine details manually.`);
+    console.error("Barcode lookup failed:", err);
+    showToast(`Barcode lookup: ${firstErrorMessage(err)}. Please enter wine details manually.`);
     const nameInput = document.getElementById('inputName');
     if (nameInput) nameInput.focus();
   }
@@ -1035,6 +1080,8 @@ function closeAddWineModal() {
   modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   document.getElementById('addWineForm').reset();
+  currentScannedWineId = null;
+  currentScannedWineName = null;
   clearAddWineFieldErrors();
   document.querySelectorAll('#formPairChips .select-chip').forEach(c => c.classList.remove('selected'));
 }
@@ -1073,6 +1120,7 @@ async function handleAddWineSubmit(e) {
   const quantity = parseInt(document.getElementById('inputQty').value, 10);
   const maturity = document.getElementById('inputMaturity').value;
   const notes = document.getElementById('inputNotes').value.trim();
+  const barcodeVal = document.getElementById('inputBarcode') ? document.getElementById('inputBarcode').value.trim() : '';
 
   // Grape must be one of the server's blends (or left blank)
   let blendID = null;
@@ -1089,19 +1137,30 @@ async function handleAddWineSubmit(e) {
   const selectedPairings = Array.from(document.querySelectorAll('#formPairChips .select-chip.selected'))
     .map(chip => chip.getAttribute('data-val'));
 
-  const body = {
-    itemQuantity: isNaN(quantity) ? null : quantity,
-    wine: {
-      wineName: name,
-      wineType: type,
-      wineRegion: region || null,
-      wineVint: vintageText === '' ? null : Number(vintageText),
-      wineValue: priceText === '' ? null : priceText,
-      wineDescription: notes || null,
-      blendID,
-      pairings: selectedPairings
-    }
-  };
+  let body;
+  // If the scanned wine is already in the catalog and user kept the catalog name:
+  if (currentScannedWineId && name.toLowerCase() === (currentScannedWineName || '').toLowerCase()) {
+    body = {
+      wineId: currentScannedWineId,
+      itemQuantity: isNaN(quantity) ? null : quantity
+    };
+  } else {
+    body = {
+      itemQuantity: isNaN(quantity) ? null : quantity,
+      wine: {
+        wineName: name,
+        wineType: type,
+        wineRegion: region || null,
+        wineVint: vintageText === '' ? null : Number(vintageText),
+        wineValue: priceText === '' ? null : priceText,
+        wineDescription: notes || null,
+        wineBarcode: barcodeVal || null,
+        blendID,
+        pairings: selectedPairings
+      }
+    };
+  }
+
   const offsets = DRINK_WINDOW_OFFSETS[maturity];
   if (offsets) {
     body.itemDrinkFrom = isoDateYearsFromToday(offsets.fromYears);
@@ -1790,6 +1849,7 @@ async function loadDashboardData() {
       return;
     }
     collectionId = collection.collectionId;
+    currentMemberRole = collection.memberRole || 'owner';
     initUserCard();
 
     const [itemsData, pairingsData, blendsData] = await Promise.all([
@@ -1829,6 +1889,333 @@ async function signOut(e) {
     // Going to the login page anyway; the session expires on its own.
   }
   window.location.href = 'login.html';
+}
+
+// ----------------------------------------------------
+// HOUSEHOLD MEMBERS (UPDATE 4)
+// ----------------------------------------------------
+async function renderHouseholdMembers() {
+  const container = document.getElementById('householdMembersList');
+  const countBadge = document.getElementById('householdCountBadge');
+  const inviteForm = document.getElementById('inviteMemberForm');
+  if (!container) return;
+
+  const isOwner = currentMemberRole === 'owner';
+  if (inviteForm) inviteForm.style.display = isOwner ? 'flex' : 'none';
+
+  try {
+    const data = await listMembers(collectionId);
+    const members = data.members || [];
+    if (countBadge) {
+      countBadge.textContent = `${members.length} ${members.length === 1 ? 'Member' : 'Members'}`;
+    }
+
+    if (members.length === 0) {
+      container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px;">No members found.</div>`;
+      return;
+    }
+
+    container.innerHTML = members.map(m => {
+      const isThisOwner = m.memberRole === 'owner';
+      const initials = getInitials(m.userFullname);
+      return `
+        <div class="household-member-card">
+          <div class="household-member-info">
+            <div class="household-member-avatar">${escapeHtml(initials)}</div>
+            <div>
+              <div class="household-member-name">${escapeHtml(m.userFullname || m.userEmail)}</div>
+              <div class="household-member-email">${escapeHtml(m.userEmail)}</div>
+            </div>
+          </div>
+          <div class="household-member-right">
+            <span class="household-role-badge ${isThisOwner ? 'owner' : 'member'}">${isThisOwner ? 'Owner' : 'Member'}</span>
+            ${isOwner && !isThisOwner ? `
+              <button type="button" class="household-remove-btn" onclick="removeHouseholdMember(event, ${Number(m.userID)})" title="Remove member from cellar" aria-label="Remove member">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load members:', err);
+    container.innerHTML = `<div style="font-size:12px; color:#ff9999; padding:8px;">Failed to load members: ${escapeHtml(firstErrorMessage(err))}</div>`;
+  }
+}
+
+async function removeHouseholdMember(event, userId) {
+  event.stopPropagation();
+  if (!confirm('Are you sure you want to remove this member from the cellar?')) return;
+  try {
+    await deleteMember(collectionId, userId);
+    showToast('Member removed from cellar.');
+    await renderHouseholdMembers();
+  } catch (err) {
+    showToast(`Could not remove member: ${firstErrorMessage(err)}`);
+  }
+}
+
+async function handleInviteMemberSubmit(e) {
+  e.preventDefault();
+  const emailInput = document.getElementById('inviteMemberEmail');
+  const submitBtn = document.getElementById('inviteMemberBtn');
+  if (!emailInput) return;
+
+  const email = emailInput.value.trim().toLowerCase();
+  if (!email) return;
+
+  submitBtn.disabled = true;
+  try {
+    await addMember(collectionId, email);
+    showToast(`✓ Added ${email} to cellar!`);
+    emailInput.value = '';
+    await renderHouseholdMembers();
+  } catch (err) {
+    if (err.code === 'user_not_found') {
+      showToast('No Vino account with that email. Please ask them to sign up first.');
+    } else if (err.code === 'already_member') {
+      showToast('That user is already a member of this cellar.');
+    } else {
+      showToast(firstErrorMessage(err));
+    }
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------
+// CELLAR WISHLIST (UPDATE 5)
+// ----------------------------------------------------
+function openWishlistModal() {
+  const modal = document.getElementById('wishlistModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  renderWishlist();
+}
+
+function closeWishlistModal() {
+  const modal = document.getElementById('wishlistModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+async function renderWishlist() {
+  const container = document.getElementById('wishlistItemsContainer');
+  const countBadge = document.getElementById('wishlistCountBadge');
+  if (!container) return;
+
+  container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">Loading wishlist…</div>`;
+
+  try {
+    const data = await listWishlist(collectionId);
+    const wishlist = data.wishlist || [];
+
+    if (countBadge) {
+      countBadge.textContent = `${wishlist.length} ${wishlist.length === 1 ? 'bottle' : 'bottles'} saved`;
+    }
+
+    if (wishlist.length === 0) {
+      container.innerHTML = `
+        <div class="uncork-empty-state" style="padding:28px 16px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+          <p>Your cellar wishlist is empty</p>
+          <span>Track wines you'd love to hunt for, buy, or uncork for future milestones.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = wishlist.map(w => {
+      const addedDate = w.wishAddedAt ? new Date(w.wishAddedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      return `
+        <div class="wishlist-card">
+          <div class="wishlist-card-main">
+            <div class="wishlist-card-title">
+              <span>${escapeHtml(w.wishName)}</span>
+              ${w.wishVint ? `<span class="wishlist-vintage-tag">${escapeHtml(w.wishVint)}</span>` : ''}
+            </div>
+            ${w.wishProducer ? `<div class="wishlist-card-producer">${escapeHtml(w.wishProducer)}</div>` : ''}
+            ${w.wishNotes ? `<div class="wishlist-card-notes">${escapeHtml(w.wishNotes)}</div>` : ''}
+            <div class="wishlist-card-meta">
+              Added ${addedDate ? `on ${addedDate}` : ''} ${w.wishAddedByName ? `by ${escapeHtml(w.wishAddedByName)}` : ''}
+            </div>
+          </div>
+          <button type="button" class="wishlist-delete-btn" onclick="handleDeleteWishlist(event, ${Number(w.wishID)})" title="Remove from wishlist" aria-label="Remove">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load wishlist:', err);
+    container.innerHTML = `<div style="color:#ff9999; font-size:12px; padding:12px;">Failed to load wishlist: ${escapeHtml(firstErrorMessage(err))}</div>`;
+  }
+}
+
+async function handleAddWishlistSubmit(e) {
+  e.preventDefault();
+  const nameInput = document.getElementById('wishNameInput');
+  const vintInput = document.getElementById('wishVintInput');
+  const prodInput = document.getElementById('wishProducerInput');
+  const notesInput = document.getElementById('wishNotesInput');
+  const submitBtn = document.getElementById('submitWishBtn');
+
+  if (!nameInput || !nameInput.value.trim()) return;
+
+  const wishName = nameInput.value.trim();
+  const wishVint = vintInput && vintInput.value.trim() ? Number(vintInput.value.trim()) : null;
+  const wishProducer = prodInput ? prodInput.value.trim() : null;
+  const wishNotes = notesInput ? notesInput.value.trim() : null;
+
+  submitBtn.disabled = true;
+  try {
+    await addWishlist(collectionId, {
+      wishName,
+      wishVint,
+      wishProducer: wishProducer || null,
+      wishNotes: wishNotes || null
+    });
+    showToast(`✓ Added "${wishName}" to your wishlist!`);
+    document.getElementById('addWishlistForm').reset();
+    await renderWishlist();
+  } catch (err) {
+    showToast(`Could not add to wishlist: ${firstErrorMessage(err)}`);
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function handleDeleteWishlist(event, wishId) {
+  event.stopPropagation();
+  try {
+    await deleteWishlist(wishId);
+    showToast('Removed wine from wishlist.');
+    await renderWishlist();
+  } catch (err) {
+    showToast(`Could not remove wish: ${firstErrorMessage(err)}`);
+  }
+}
+
+// ----------------------------------------------------
+// CSV IMPORT & EXPORT (UPDATE 3)
+// ----------------------------------------------------
+let selectedCsvFile = null;
+
+function openCsvModal() {
+  const modal = document.getElementById('csvModal');
+  if (!modal) return;
+
+  const downloadBtn = document.getElementById('downloadCsvBtn');
+  if (downloadBtn && collectionId) {
+    downloadBtn.href = getExportCsvUrl(collectionId);
+  }
+
+  // Reset file selection
+  selectedCsvFile = null;
+  const fileInput = document.getElementById('csvFileInput');
+  if (fileInput) fileInput.value = '';
+  const fileNameDisplay = document.getElementById('csvSelectedFileName');
+  if (fileNameDisplay) fileNameDisplay.textContent = 'Click to select a CSV file';
+  const submitBtn = document.getElementById('submitCsvImportBtn');
+  if (submitBtn) submitBtn.disabled = true;
+  const errorBox = document.getElementById('csvImportErrors');
+  if (errorBox) {
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+  }
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCsvModal() {
+  const modal = document.getElementById('csvModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function handleCsvFileSelect(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showToast('Please select a valid .csv file.');
+    return;
+  }
+  selectedCsvFile = file;
+  const fileNameDisplay = document.getElementById('csvSelectedFileName');
+  if (fileNameDisplay) {
+    fileNameDisplay.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  }
+  const submitBtn = document.getElementById('submitCsvImportBtn');
+  if (submitBtn) submitBtn.disabled = false;
+
+  const errorBox = document.getElementById('csvImportErrors');
+  if (errorBox) {
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+  }
+}
+
+async function handleCsvImportSubmit(e) {
+  e.preventDefault();
+  if (!selectedCsvFile || !collectionId) return;
+
+  const submitBtn = document.getElementById('submitCsvImportBtn');
+  const errorBox = document.getElementById('csvImportErrors');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Importing...';
+  }
+  if (errorBox) {
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+  }
+
+  try {
+    const result = await importCsv(collectionId, selectedCsvFile);
+    showToast(`✓ Imported ${result.imported} wine(s) (${result.bottles} total bottles)!`);
+    closeCsvModal();
+    // Reload cellar items
+    const itemsData = await listItems(collectionId, true);
+    cellar = itemsData.items.map(toCellarWine);
+    updateStats();
+    updateRegionFilterChips();
+    renderMain();
+    refreshServerValue();
+  } catch (err) {
+    console.error('CSV import error:', err);
+    if (errorBox) {
+      errorBox.style.display = 'block';
+      if (err.rows && err.rows.length > 0) {
+        errorBox.innerHTML = `<strong>${escapeHtml(err.message || 'Row validation failed:')}</strong><ul style="margin:6px 0 0; padding-left:18px;">` +
+          err.rows.map(r => {
+            const rowIssues = Object.values(r.fields || {}).join('; ');
+            return `<li><strong>Row ${r.row}:</strong> ${escapeHtml(rowIssues)}</li>`;
+          }).join('') + `</ul>`;
+      } else {
+        errorBox.textContent = firstErrorMessage(err);
+      }
+    }
+    showToast(`CSV Import failed: ${firstErrorMessage(err)}`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Upload & Import Bottles';
+    }
+  }
 }
 
 // ----------------------------------------------------
@@ -2072,6 +2459,89 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Wire Wishlist controls (Update 5)
+  const openWishlistBtn = document.getElementById('openWishlistBtn');
+  if (openWishlistBtn) {
+    openWishlistBtn.addEventListener('click', () => {
+      closeActionDropdown();
+      openWishlistModal();
+    });
+  }
+
+  const closeWishlistBtn = document.getElementById('closeWishlistBtn');
+  if (closeWishlistBtn) closeWishlistBtn.addEventListener('click', closeWishlistModal);
+
+  const cancelWishlistBtn = document.getElementById('cancelWishlistBtn');
+  if (cancelWishlistBtn) cancelWishlistBtn.addEventListener('click', closeWishlistModal);
+
+  const addWishlistForm = document.getElementById('addWishlistForm');
+  if (addWishlistForm) addWishlistForm.addEventListener('submit', handleAddWishlistSubmit);
+
+  const wishlistModal = document.getElementById('wishlistModal');
+  if (wishlistModal) {
+    wishlistModal.addEventListener('click', (e) => {
+      if (e.target.id === 'wishlistModal') closeWishlistModal();
+    });
+  }
+
+  // Wire CSV Import/Export controls (Update 3)
+  const openCsvModalBtn = document.getElementById('openCsvModalBtn');
+  if (openCsvModalBtn) {
+    openCsvModalBtn.addEventListener('click', () => {
+      closeActionDropdown();
+      openCsvModal();
+    });
+  }
+
+  const closeCsvModalBtn = document.getElementById('closeCsvModalBtn');
+  if (closeCsvModalBtn) closeCsvModalBtn.addEventListener('click', closeCsvModal);
+
+  const cancelCsvModalBtn = document.getElementById('cancelCsvModalBtn');
+  if (cancelCsvModalBtn) cancelCsvModalBtn.addEventListener('click', closeCsvModal);
+
+  const csvDropzone = document.getElementById('csvDropzone');
+  const csvFileInput = document.getElementById('csvFileInput');
+  if (csvDropzone && csvFileInput) {
+    csvDropzone.addEventListener('click', () => csvFileInput.click());
+
+    csvDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      csvDropzone.style.borderColor = 'var(--gold)';
+    });
+
+    csvDropzone.addEventListener('dragleave', () => {
+      csvDropzone.style.borderColor = '';
+    });
+
+    csvDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      csvDropzone.style.borderColor = '';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleCsvFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    csvFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleCsvFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  const csvImportForm = document.getElementById('csvImportForm');
+  if (csvImportForm) csvImportForm.addEventListener('submit', handleCsvImportSubmit);
+
+  const csvModal = document.getElementById('csvModal');
+  if (csvModal) {
+    csvModal.addEventListener('click', (e) => {
+      if (e.target.id === 'csvModal') closeCsvModal();
+    });
+  }
+
+  // Wire Household Member Invitation Form (Update 4)
+  const inviteMemberForm = document.getElementById('inviteMemberForm');
+  if (inviteMemberForm) inviteMemberForm.addEventListener('submit', handleInviteMemberSubmit);
+
   // Close on Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -2080,6 +2550,8 @@ document.addEventListener('DOMContentLoaded', () => {
       closeProfileModal();
       closeRecommendModal();
       closeScannerModal();
+      closeWishlistModal();
+      closeCsvModal();
       closeActionDropdown();
 
       const sortMenu = document.getElementById('sortDropdownMenu');

@@ -149,6 +149,58 @@ function getBlends() { return api('GET', '/blends'); }
 
 function getPairings() { return api('GET', '/pairings'); }
 
+function lookupBarcode(code) { return api('GET', `/wines/barcode/${encodeURIComponent(code)}`); }
+
+function listWishlist(collectionId) { return api('GET', `/collections/${collectionId}/wishlist`); }
+
+function addWishlist(collectionId, body) { return api('POST', `/collections/${collectionId}/wishlist`, body); }
+
+function deleteWishlist(wishId) { return api('DELETE', `/wishlist/${wishId}`); }
+
+function listMembers(collectionId) { return api('GET', `/collections/${collectionId}/members`); }
+
+function addMember(collectionId, userEmail) { return api('POST', `/collections/${collectionId}/members`, { userEmail }); }
+
+function deleteMember(collectionId, userId) { return api('DELETE', `/collections/${collectionId}/members/${userId}`); }
+
+async function importCsv(collectionId, file) {
+  const form = new FormData();
+  form.append('file', file);
+  let resp;
+  try {
+    resp = await fetch(API_BASE + `/collections/${collectionId}/import`, {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    });
+  } catch (networkError) {
+    throw { status: 0, code: 'network_error', message: NETWORK_ERROR_MESSAGE, fields: null };
+  }
+
+  let data = null;
+  try {
+    data = await resp.json();
+  } catch (e) {
+    data = null;
+  }
+
+  if (!resp.ok || data === null) {
+    const err = (data && data.error) || {};
+    throw {
+      status: resp.status,
+      code: err.code || 'import_error',
+      message: err.message || `CSV import failed (${resp.status}).`,
+      rows: err.rows || null,
+      fields: err.fields || null,
+    };
+  }
+  return data;
+}
+
+function getExportCsvUrl(collectionId) {
+  return `${API_BASE}/collections/${collectionId}/export.csv`;
+}
+
 // Stop here on a page opened from a file, before any page script runs.
 if (isOpenedAsFile()) {
   document.addEventListener('DOMContentLoaded', showServeFromHttpMessage);
