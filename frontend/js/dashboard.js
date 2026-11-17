@@ -2508,6 +2508,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Wire Mobile Sticky Action Bar (Feature 3)
+  const mobileAddWineBtn = document.getElementById('mobileAddWineBtn');
+  if (mobileAddWineBtn) mobileAddWineBtn.addEventListener('click', openAddWineModal);
+
+  const mobileScanBarcodeBtn = document.getElementById('mobileScanBarcodeBtn');
+  if (mobileScanBarcodeBtn) mobileScanBarcodeBtn.addEventListener('click', openScannerModal);
+
+  const mobileRecommendBtn = document.getElementById('mobileRecommendBtn');
+  if (mobileRecommendBtn) mobileRecommendBtn.addEventListener('click', openRecommendModal);
+
+  const mobileWishlistBtn = document.getElementById('mobileWishlistBtn');
+  if (mobileWishlistBtn) mobileWishlistBtn.addEventListener('click', openWishlistModal);
+
   // Wire Wishlist controls (Update 5)
   const openWishlistBtn = document.getElementById('openWishlistBtn');
   if (openWishlistBtn) {

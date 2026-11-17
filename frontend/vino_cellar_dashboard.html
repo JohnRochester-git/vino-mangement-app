@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Vino — My Cellar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
@@ -1141,6 +1141,41 @@
       </div>
     </div>
   </div>
+
+  <!-- Floating Mobile Quick Action Pill (Feature 3) -->
+  <nav class="mobile-sticky-actions" id="mobileStickyActions" aria-label="Quick Cellar Actions">
+    <button type="button" class="mobile-action-pill-btn" id="mobileAddWineBtn" title="Add Wine">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Add</span>
+    </button>
+    <button type="button" class="mobile-action-pill-btn" id="mobileScanBarcodeBtn" title="Scan Barcode">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+        <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+        <line x1="7" y1="8" x2="7" y2="16"></line>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="17" y1="8" x2="17" y2="16"></line>
+      </svg>
+      <span>Scan</span>
+    </button>
+    <button type="button" class="mobile-action-pill-btn" id="mobileRecommendBtn" title="Recommend a Wine">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+      </svg>
+      <span>Pair</span>
+    </button>
+    <button type="button" class="mobile-action-pill-btn" id="mobileWishlistBtn" title="Wishlist">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      </svg>
+      <span>Wishlist</span>
+    </button>
+  </nav>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
