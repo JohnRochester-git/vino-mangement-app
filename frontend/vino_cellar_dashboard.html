@@ -149,36 +149,6 @@
                 <span class="action-dropdown-sub">Spreadsheet backup & bulk import</span>
               </div>
             </button>
-
-            <!-- 6. Recently Uncorked Journal -->
-            <button class="action-dropdown-item" id="openUncorkJournalBtn" type="button" role="menuitem">
-              <div class="action-dropdown-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
-                  <path d="M12 9v9M8 21h8" />
-                </svg>
-              </div>
-              <div class="action-dropdown-text">
-                <span class="action-dropdown-title">Recently Uncorked</span>
-                <span class="action-dropdown-sub">Tasting history & ratings of enjoyed bottles</span>
-              </div>
-            </button>
-
-            <!-- 7. Household & Cellar Sharing -->
-            <button class="action-dropdown-item" id="openHouseholdBtn" type="button" role="menuitem">
-              <div class="action-dropdown-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div class="action-dropdown-text">
-                <span class="action-dropdown-title">Cellar Sharing</span>
-                <span class="action-dropdown-sub">Manage household access & co-collectors</span>
-              </div>
-            </button>
           </div>
         </div>
 
@@ -500,6 +470,15 @@
           <div class="profile-insight-item">
             <div class="insight-label">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              Average Tasting Rating
+            </div>
+            <div class="insight-value" id="profileAverageRating">—</div>
+          </div>
+          <div class="profile-insight-item">
+            <div class="insight-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
                 <path d="M12 9v9M8 21h8" />
               </svg>
@@ -814,6 +793,104 @@
           </button>
           <button class="btn-gold" id="doneOverviewBtn">Done</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- UNCORK & RATE BOTTLE MODAL                     -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="uncorkModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="uncorkModalTitle" style="max-width: 480px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="uncorkModalTitle">Uncork & Log Tasting</h2>
+          <div class="modal-subtitle">Record your personal star rating and sommelier tasting notes</div>
+        </div>
+        <button class="modal-close-btn" id="closeUncorkModalBtn" aria-label="Close uncork dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px;">
+        <!-- Wine preview banner -->
+        <div class="uncork-wine-preview">
+          <div class="uncork-wine-preview-left">
+            <h3 class="uncork-wine-preview-title" id="uncorkWineName">Wine Name</h3>
+            <div class="uncork-wine-preview-sub" id="uncorkWineMeta">2018 Vintage • Varietal</div>
+          </div>
+          <span class="bottle-tag red" id="uncorkWineTag">Red</span>
+        </div>
+
+        <!-- Quantity Stepper -->
+        <div class="form-group" style="margin-top: 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+            <label style="margin:0; font-size:12.5px;">Bottles to Uncork</label>
+            <span style="font-size:12px; color:var(--text-muted);" id="uncorkAvailableQty">2 in cellar</span>
+          </div>
+          <div class="qty-counter-row" style="margin-top: 4px;">
+            <button type="button" class="qty-stepper-btn" id="uncorkDecQtyBtn" aria-label="Decrease quantity">−</button>
+            <span class="metric-value" id="uncorkQtyVal" style="margin:0; min-width:32px; text-align:center;">1</span>
+            <button type="button" class="qty-stepper-btn" id="uncorkIncQtyBtn" aria-label="Increase quantity">+</button>
+            <span style="font-size: 12.5px; color: var(--gold); margin-left: 8px;" id="uncorkQtySub">Bottle</span>
+          </div>
+        </div>
+
+        <!-- Interactive Sommelier Rating Picker (1.0 to 5.0) -->
+        <div class="form-group" style="margin-top: 18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+            <label style="margin:0; font-size:12.5px;">Tasting Rating (1 to 5 Stars)</label>
+            <span class="uncork-rating-display" id="uncorkRatingDisplay">Unrated (Optional)</span>
+          </div>
+
+          <!-- Interactive 5-Star Row -->
+          <div class="star-rating-picker" id="starRatingPicker">
+            <button type="button" class="star-btn" data-star="1" aria-label="1 star">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button type="button" class="star-btn" data-star="2" aria-label="2 stars">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button type="button" class="star-btn" data-star="3" aria-label="3 stars">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button type="button" class="star-btn" data-star="4" aria-label="4 stars">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button type="button" class="star-btn" data-star="5" aria-label="5 stars">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+          </div>
+
+          <!-- Quick Half-Step Score Chips -->
+          <div class="rating-quick-chips" id="ratingQuickChips">
+            <button type="button" class="rating-chip" data-rating="3">3.0 ★</button>
+            <button type="button" class="rating-chip" data-rating="3.5">3.5 ★</button>
+            <button type="button" class="rating-chip" data-rating="4">4.0 ★</button>
+            <button type="button" class="rating-chip" data-rating="4.5">4.5 ★</button>
+            <button type="button" class="rating-chip" data-rating="5">5.0 ★</button>
+            <button type="button" class="rating-chip clear" id="clearRatingBtn">Clear</button>
+          </div>
+        </div>
+
+        <!-- Tasting Notes Textarea -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="uncorkNotesInput" style="font-size:12.5px;">Tasting & Cellar Notes (Optional)</label>
+          <textarea id="uncorkNotesInput" class="form-input" rows="3" maxlength="2000" placeholder="Notes on aroma, tannins, acidity, finish, or food pairing..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--hairline);">
+        <button type="button" class="btn-ghost" id="cancelUncorkBtn">Cancel</button>
+        <button type="button" class="btn-gold" id="submitUncorkBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#241318" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3h8l-1 6a3 3 0 01-6 0z" />
+            <path d="M12 9v9M8 21h8" />
+          </svg>
+          Uncork & Log Tasting
+        </button>
       </div>
     </div>
   </div>
