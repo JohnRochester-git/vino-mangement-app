@@ -853,10 +853,26 @@ async function closeScannerModal() {
 async function startScanner() {
   const statusLabel = document.getElementById('scannerStatusLabel');
   const fallbackBox = document.getElementById('scannerFallbackBox');
+  const promptEl = document.getElementById('scannerFallbackPrompt');
 
   if (typeof Html5Qrcode === 'undefined') {
     if (statusLabel) statusLabel.textContent = 'Scanner library loading or unavailable.';
     if (fallbackBox) fallbackBox.style.display = 'block';
+    return;
+  }
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isSecure = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  // iPhone Safari completely forbids WebRTC getUserMedia on insecure HTTP (e.g. 192.168.x.x)
+  if (!isSecure && isIOS) {
+    if (statusLabel) statusLabel.textContent = 'iPhone requires HTTPS for live video streaming.';
+    if (fallbackBox) {
+      fallbackBox.style.display = 'block';
+      if (promptEl) {
+        promptEl.innerHTML = '<strong>Live video stream requires HTTPS on iPhone.</strong><br>Tap below to take a photo directly with your iPhone camera:';
+      }
+    }
     return;
   }
 
@@ -885,13 +901,25 @@ async function startScanner() {
     );
     isScannerRunning = true;
     if (statusLabel) statusLabel.textContent = 'Camera active. Point at bottle barcode.';
+    if (fallbackBox) fallbackBox.style.display = 'none';
   } catch (err) {
     console.warn("Camera start failed:", err);
     isScannerRunning = false;
     if (statusLabel) {
       statusLabel.textContent = 'Camera access denied or unavailable.';
     }
-    if (fallbackBox) fallbackBox.style.display = 'block';
+    if (fallbackBox) {
+      fallbackBox.style.display = 'block';
+      if (promptEl) {
+        if (!isSecure) {
+          promptEl.innerHTML = '<strong>Live video requires HTTPS on iPhone.</strong><br>Tap below to snap a photo with your iPhone camera:';
+        } else if (isIOS) {
+          promptEl.innerHTML = '<strong>Camera permission denied in Safari.</strong><br>To allow: tap <em>"aA"</em> in the address bar → <em>Website Settings</em> → <em>Camera</em> → <em>Allow</em>.<br>Or tap below to snap a photo:';
+        } else {
+          promptEl.textContent = 'Camera permission was denied. You can snap a photo directly using the button below:';
+        }
+      }
+    }
   }
 }
 
@@ -2374,29 +2402,50 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cancelScannerBtn) cancelScannerBtn.addEventListener('click', closeScannerModal);
 
   const triggerUploadFallbackBtn = document.getElementById('triggerUploadFallbackBtn');
+  const barcodeCameraInput = document.getElementById('barcodeCameraInput');
   const barcodeFileInput = document.getElementById('barcodeFileInput');
-  if (triggerUploadFallbackBtn && barcodeFileInput) {
-    triggerUploadFallbackBtn.addEventListener('click', () => barcodeFileInput.click());
+  const barcodeSnapBtn = document.getElementById('barcodeSnapBtn');
+  const barcodeUploadBtn = document.getElementById('barcodeUploadBtn');
+
+  if (barcodeSnapBtn && barcodeCameraInput) {
+    barcodeSnapBtn.addEventListener('click', () => barcodeCameraInput.click());
   }
 
-  const barcodeUploadBtn = document.getElementById('barcodeUploadBtn');
+  if (triggerUploadFallbackBtn && barcodeCameraInput) {
+    triggerUploadFallbackBtn.addEventListener('click', () => barcodeCameraInput.click());
+  }
+
   if (barcodeUploadBtn && barcodeFileInput) {
     barcodeUploadBtn.addEventListener('click', () => barcodeFileInput.click());
+  }
+
+  async function handleBarcodeFileSelection(file) {
+    if (!file) return;
+    showToast("Analyzing barcode photo...");
+    try {
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("barcodeReader", { verbose: false });
+      }
+      const decodedText = await html5QrCodeScanner.scanFile(file, true);
+      await onBarcodeScanSuccess(decodedText);
+    } catch (scanErr) {
+      console.warn("Barcode decode failed:", scanErr);
+      showToast("Could not detect a clear barcode in this photo. Please try a closer, well-lit shot.");
+    }
+  }
+
+  if (barcodeCameraInput) {
+    barcodeCameraInput.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        await handleBarcodeFileSelection(e.target.files[0]);
+      }
+    });
   }
 
   if (barcodeFileInput) {
     barcodeFileInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        const file = e.target.files[0];
-        try {
-          if (!html5QrCodeScanner) {
-            html5QrCodeScanner = new Html5Qrcode("barcodeReader", { verbose: false });
-          }
-          const decodedText = await html5QrCodeScanner.scanFile(file, true);
-          await onBarcodeScanSuccess(decodedText);
-        } catch (scanErr) {
-          showToast("No readable barcode found in image. Please try another photo.");
-        }
+        await handleBarcodeFileSelection(e.target.files[0]);
       }
     });
   }
