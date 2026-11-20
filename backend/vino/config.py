@@ -50,6 +50,7 @@ class Config:
     google_client_secret: str = ""
     google_redirect_uri: str = ""
     frontend_url: str = ""
+    demo_login: bool = True
 
     @property
     def google_enabled(self):
@@ -74,6 +75,7 @@ class Config:
             google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET", "").strip(),
             google_redirect_uri=os.environ.get("GOOGLE_REDIRECT_URI", "").strip(),
             frontend_url=os.environ.get("FRONTEND_URL", "").strip().rstrip("/"),
+            demo_login=_bool("DEMO_LOGIN", True),
         )
 
     def validate(self):

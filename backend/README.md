@@ -149,7 +149,8 @@ Settings come from environment variables, not from the code. `.env.example` list
 | `GOOGLE_CLIENT_SECRET` | Google sign-in: the client secret. Secret; on Cloudflare it's a Wrangler secret. | none |
 | `GOOGLE_REDIRECT_URI` | Google sign-in: the callback address, exactly as registered with Google | none |
 | `FRONTEND_URL` | Where the pages are, if not on the API's own site (local development: `http://localhost:5500`) | none (same site) |
-| `DEMO_EMAIL`, `DEMO_PASSWORD` | Login for the demo data | `demo@example.com`, none |
+| `DEMO_LOGIN` | Show "Explore a demo cellar" on the login page (a private sample cellar per visitor, for a day) | `true` |
+| `DEMO_EMAIL`, `DEMO_PASSWORD` | Login for the demo data (`seed_demo.py`, local only) | `demo@example.com`, none |
 
 `PORT` is gone. The development server and gunicorn both use port 8000, and the Docker setup and Cloudflare expect 8000.
 

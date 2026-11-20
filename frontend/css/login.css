@@ -282,12 +282,25 @@ body.login-page {
 }
 
 /* Auth mode toggle (sign in / create account) */
-/* ---- Sign in with Google ---- */
-.google-signin {
-  display: none; /* shown by auth.js when the backend has Google switched on */
+/* ---- Other ways in: Google and the demo ---- */
+/* Each is hidden until auth.js finds the backend has it switched on. */
+.alt-signin,
+.btn-google,
+.btn-demo,
+.demo-note {
+  display: none;
 }
 
-.google-signin.visible {
+.alt-signin.visible {
+  display: block;
+}
+
+.btn-google.visible,
+.btn-demo.visible {
+  display: flex;
+}
+
+.demo-note.visible {
   display: block;
 }
 
@@ -312,7 +325,6 @@ body.login-page {
 
 .btn-google {
   width: 100%;
-  display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -327,6 +339,43 @@ body.login-page {
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-demo {
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  background: rgba(122, 26, 46, 0.35);
+  color: var(--text);
+  border: 1px solid var(--hairline-gold);
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-size: 14.5px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-demo:hover {
+  border-color: var(--gold);
+  background: rgba(122, 26, 46, 0.55);
+  transform: translateY(-1px);
+}
+
+.btn-demo:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+.demo-note {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .btn-google:hover {

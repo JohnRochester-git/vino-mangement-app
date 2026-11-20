@@ -181,7 +181,16 @@ No body, but still send `Content-Type: application/json`. `200`: `{"loggedOut": 
 
 ### GET /auth/providers
 
-Which sign-in methods are switched on: `{"password": true, "google": true}`. The login page shows the Google button only when `google` is `true`. No login needed.
+Which sign-in methods are switched on: `{"password": true, "google": true, "demo": true}`. The login page shows the Google and demo buttons only when they're `true`. No login needed.
+
+### POST /auth/demo
+
+"Explore a demo cellar": creates a fresh, private demo account and logs into it, so visitors can try Vino without signing up. No body. `201`: the same shape as signup. The session lasts one day.
+
+- The account (email `demo-<random>@demo.invalid`, no password) holds the 7 sample wines from `seed_demo.py` and two tasting-journal entries. Visitors never share a cellar, so one person's changes don't affect another's.
+- The sample wines are shared catalog entries, created once, so the catalog doesn't grow with each demo.
+- Demo accounts older than 24 hours are deleted on the next demo sign-in, with their cellar, journal and sessions.
+- `429 demo_busy` after 300 demo accounts in an hour, so a script can't fill the database. `404` when `DEMO_LOGIN=false`.
 
 ### Sign in with Google
 

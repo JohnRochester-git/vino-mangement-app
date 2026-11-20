@@ -112,17 +112,43 @@ document.addEventListener('DOMContentLoaded', () => {
     alertBanner.style.display = 'none';
   }
 
-  // ---- Sign in with Google ----
-  // The button is a plain link to the backend, which sends the browser on to
-  // Google and, afterwards, back to the welcome page. Shown only when the
-  // backend has Google switched on.
-  const googleSignin = document.getElementById('googleSignin');
+  // ---- Other ways in: Google and the demo ----
+  // Each button shows only when the backend has it switched on, and the
+  // "or" divider shows if either does.
+  // Google: a plain link to the backend, which sends the browser on to Google
+  // and, afterwards, back to the welcome page.
+  // Demo: one click creates a private sample cellar and logs into it.
+  const altSignin = document.getElementById('altSignin');
   const googleSigninBtn = document.getElementById('googleSigninBtn');
-  if (googleSignin && googleSigninBtn) {
+  const demoSigninBtn = document.getElementById('demoSigninBtn');
+  const demoNote = document.getElementById('demoNote');
+  if (altSignin && googleSigninBtn && demoSigninBtn) {
     googleSigninBtn.href = API_BASE + '/auth/google/start';
     getAuthProviders()
-      .then((providers) => { if (providers.google) googleSignin.classList.add('visible'); })
-      .catch(() => {}); // no button if the server can't say
+      .then((providers) => {
+        if (providers.google) googleSigninBtn.classList.add('visible');
+        if (providers.demo) {
+          demoSigninBtn.classList.add('visible');
+          if (demoNote) demoNote.classList.add('visible');
+        }
+        if (providers.google || providers.demo) altSignin.classList.add('visible');
+      })
+      .catch(() => {}); // no buttons if the server can't say
+
+    demoSigninBtn.addEventListener('click', async () => {
+      clearAlert();
+      demoSigninBtn.disabled = true;
+      const label = document.getElementById('demoBtnText');
+      if (label) label.textContent = 'Setting up your demo cellar…';
+      try {
+        await startDemo();
+        window.location.href = 'welcome.html';
+      } catch (err) {
+        showAlert(err.message);
+        demoSigninBtn.disabled = false;
+        if (label) label.textContent = 'Explore a demo cellar';
+      }
+    });
   }
 
   // Coming back from Google with a problem: the backend adds ?error=...
