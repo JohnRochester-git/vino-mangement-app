@@ -203,6 +203,15 @@ def add_item(collection_id):
     if wine is None:
         raise ValidationError({"wineId": "No wine with that id. Search with GET /api/v1/wines."})
 
+    item_id = insert_item(collection_id, wine_id, wine, data)
+    return jsonify(get_item_json(item_id)), 201
+
+
+def insert_item(collection_id, wine_id, wine, data):
+    """Adds bottles of a wine to a collection and returns the new item's id.
+    `wine` holds the wine's wineType and wineVint; `data` the validated item
+    fields (itemQuantity, plus optional dates, storage and price). With no
+    drinking window given, one is estimated from the wine's type and vintage."""
     drink_from, drink_by = data.get("itemDrinkFrom"), data.get("itemDrinkBy")
     if drink_from or drink_by:
         source = "user"
@@ -216,7 +225,7 @@ def add_item(collection_id):
         [wine_id, collection_id, data["itemQuantity"], data.get("itemStoredAt"), data.get("itemAquiredDate"),
          drink_from, drink_by, source, data.get("itemPurchasePrice"), now_iso()],
     )
-    return jsonify(get_item_json(result.last_row_id)), 201
+    return result.last_row_id
 
 
 @bp.get("/items/<int:item_id>")

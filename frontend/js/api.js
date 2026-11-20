@@ -115,6 +115,8 @@ function getMe() { return api('GET', '/auth/me'); }
 
 function getAuthProviders() { return api('GET', '/auth/providers'); }
 
+function startDemo() { return api('POST', '/auth/demo'); }
+
 function login(userEmail, password) {
   return api('POST', '/auth/login', { userEmail, password });
 }

@@ -38,11 +38,12 @@ def _hash_token(token):
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def new_session_statements(email_address):
+def new_session_statements(email_address, days=None):
     """SQL that creates a session for the user with this email, and the token
-    for the cookie. Returned as statements so callers can batch them."""
+    for the cookie. Returned as statements so callers can batch them. Lasts
+    SESSION_DAYS unless `days` is given."""
     token = secrets.token_urlsafe(32)
-    days = current_app.config["VINO"].session_days
+    days = days or current_app.config["VINO"].session_days
     expires = iso(utcnow() + timedelta(days=days))
     sql = (
         "INSERT INTO session (sessionID, userID, sessionCreatedAt, sessionExpiresAt) "
@@ -51,12 +52,12 @@ def new_session_statements(email_address):
     return token, [(sql, [_hash_token(token), now_iso(), expires, email_address])]
 
 
-def set_session_cookie(response, token):
+def set_session_cookie(response, token, days=None):
     config = current_app.config["VINO"]
     response.set_cookie(
         COOKIE_NAME,
         token,
-        max_age=config.session_days * 24 * 3600,
+        max_age=(days or config.session_days) * 24 * 3600,
         httponly=True,
         samesite="Lax",
         secure=config.cookie_secure,
@@ -107,7 +108,7 @@ def login_required(view):
     return wrapper
 
 
-def _me_payload(user):
+def me_payload(user):
     from .api.collections import list_collections_for
 
     return {"user": user_json(user), "collections": list_collections_for(user["userID"])}
@@ -166,7 +167,7 @@ def signup():
                            {"userEmail": "An account with that email already exists."}) from None
         raise
     user = db.query_one("SELECT * FROM user WHERE userEmail = ?", [data["userEmail"]])
-    response = jsonify(_me_payload(user))
+    response = jsonify(me_payload(user))
     response.status_code = 201
     return set_session_cookie(response, token)
 
@@ -210,7 +211,7 @@ def login():
 
     token, session_sql = new_session_statements(address)
     db.batch([record, *session_sql])
-    return set_session_cookie(jsonify(_me_payload(user)), token)
+    return set_session_cookie(jsonify(me_payload(user)), token)
 
 
 @bp.post("/auth/logout")
@@ -224,4 +225,4 @@ def logout():
 @bp.get("/auth/me")
 @login_required
 def me():
-    return jsonify(_me_payload(current_user()))
+    return jsonify(me_payload(current_user()))
