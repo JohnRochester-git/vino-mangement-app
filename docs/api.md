@@ -363,7 +363,7 @@ Errors: `400` if the code isn't a valid barcode (wrong length, letters, bad chec
 Set by the `BARCODE_PROVIDER` setting:
 
 - `none` (default): only wines already in the catalog are found.
-- `openfoodfacts`: also asks [Open Food Facts](https://world.openfoodfacts.org), a free, volunteer-run product database that includes some wines. No API key is needed. Set `BARCODE_CONTACT` to a team email: its terms ask every app to identify itself with a contact address. Limits and terms, from its API docs (checked 2026-10-29):
+- `openfoodfacts`: also asks [Open Food Facts](https://world.openfoodfacts.org), a free, volunteer-run product database that includes some wines. No API key is needed. Set `BARCODE_CONTACT` to a team email: its terms ask every app to identify itself with a contact address. **The live site and the preview use this.** The Worker passes `BARCODE_CONTACT` from a Wrangler secret when one is set, and the site's address otherwise. Limits and terms, from its API docs (checked 2026-10-29):
   - 15 product lookups per minute per IP address. Going over can get the IP banned. All container instances may share one IP.
   - The data is under the Open Database License (ODbL), and product images under CC BY-SA.
   - The data comes with no guarantee of accuracy, which is why the user always confirms.

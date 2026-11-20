@@ -11,12 +11,16 @@ export class Backend extends Container {
         COOKIE_SECURE: "true",
         FLASK_ENV: "production",
         ALLOWED_ORIGINS: "",
-        BARCODE_PROVIDER: "none",
+        BARCODE_PROVIDER: "openfoodfacts",
     };
 
     // Google sign-in settings come from the Worker's environment: the client ID
     // and redirect address are vars in wrangler.jsonc, the client secret is a
     // Wrangler secret. Missing values just switch Google sign-in off.
+    // Barcode scans that miss our catalog are looked up on Open Food Facts,
+    // whose terms ask each app for a contact. BARCODE_CONTACT (a team email,
+    // set as a Wrangler secret so it stays out of this public repo) is used
+    // when set; otherwise the site's address.
     constructor(ctx, env) {
         super(ctx, env);
         this.envVars = {
@@ -24,6 +28,7 @@ export class Backend extends Container {
             GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID ?? "",
             GOOGLE_REDIRECT_URI: env.GOOGLE_REDIRECT_URI ?? "",
             GOOGLE_CLIENT_SECRET: env.GOOGLE_CLIENT_SECRET ?? "",
+            BARCODE_CONTACT: env.BARCODE_CONTACT || "https://www.vinowine.org",
         };
     }
 }

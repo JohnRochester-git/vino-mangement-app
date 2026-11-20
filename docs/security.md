@@ -82,7 +82,7 @@ Each token does one job, so a leak is contained: the backup token can't deploy, 
 
 - **The login rate limit isn't verified.** The rule exists and is active, but bursts of up to 46 logins in 10 seconds from one address (Nov 13, around 21:40–21:52 UTC) got no 429. The backend's per-email lockout is the protection in effect. To investigate.
 - **The Free plan allows one rate-limit rule**, so only login is covered.
-- **The container can reach the internet.** The containers library allows it by default. Setting `enableInternet = false` on the `Backend` class would limit it to the D1 bridge; Open Food Facts would then need allowing by name if it's turned on.
+- **The container can reach the internet.** The containers library allows it by default. Setting `enableInternet = false` on the `Backend` class would limit it to the D1 bridge; Open Food Facts, which the live site uses for barcode lookups, would then need allowing by name.
 - **The preview Worker is public** on its own `workers.dev` address. It holds only test data. A Zero Trust login is a deferred nice-to-have.
 - **No security headers beyond HSTS and `nosniff`** (for example, no Content-Security-Policy). Deferred nice-to-have.
 - **Terraform state has no versioning or lock.** One person runs Terraform, and the workflow never runs two jobs at once.
