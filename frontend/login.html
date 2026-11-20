@@ -134,8 +134,9 @@
           </svg>
         </button>
 
-        <!-- Sign in with Google (shown only when the backend has it switched on) -->
-        <div class="google-signin" id="googleSignin">
+        <!-- Other ways in: Google and the demo. Each shows only when the backend
+             has it switched on; the divider shows if either does. -->
+        <div class="alt-signin" id="altSignin">
           <div class="auth-divider"><span>or</span></div>
           <a class="btn-google" id="googleSigninBtn" href="#">
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -146,6 +147,14 @@
             </svg>
             <span>Continue with Google</span>
           </a>
+          <button type="button" class="btn-demo" id="demoSigninBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 22h8M12 15v7M7 2h10l-1 7a4 4 0 0 1-8 0L7 2z" />
+            </svg>
+            <span id="demoBtnText">Explore a demo cellar</span>
+          </button>
+          <p class="demo-note" id="demoNote">No account needed: your own sample cellar, deleted after a day.</p>
         </div>
 
         <div class="auth-toggle" id="authToggle">

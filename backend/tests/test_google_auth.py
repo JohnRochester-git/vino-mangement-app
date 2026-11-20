@@ -69,8 +69,8 @@ def finish(client, query, code="one-time-code"):
 
 
 def test_providers(client, gclient):
-    assert client.get("/api/v1/auth/providers").get_json() == {"password": True, "google": False}
-    assert gclient.get("/api/v1/auth/providers").get_json() == {"password": True, "google": True}
+    assert client.get("/api/v1/auth/providers").get_json()["google"] is False
+    assert gclient.get("/api/v1/auth/providers").get_json()["google"] is True
 
 
 def test_start_sends_browser_to_google_with_pkce(gclient):

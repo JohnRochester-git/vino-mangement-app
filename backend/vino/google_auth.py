@@ -151,7 +151,8 @@ def find_or_create_user(claims):
 
 @bp.get("/auth/providers")
 def providers():
-    return jsonify({"password": True, "google": _config().google_enabled})
+    config = _config()
+    return jsonify({"password": True, "google": config.google_enabled, "demo": config.demo_login})
 
 
 @bp.get("/auth/google/start")
