@@ -1131,11 +1131,12 @@
   bottom: 0;
   background: rgba(12, 5, 7, 0.82);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 100;
+  z-index: 1000;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.24s ease, visibility 0.24s ease;
@@ -1144,6 +1145,7 @@
 .modal-backdrop.open {
   opacity: 1;
   visibility: visible;
+  z-index: 1000;
 }
 
 .modal-dialog {
@@ -2352,7 +2354,7 @@
 
 /* ---------- BARCODE SCANNER MODAL STYLES ---------- */
 .scanner-modal-backdrop {
-  z-index: 120;
+  z-index: 1050;
 }
 
 #barcodeReader {
@@ -2464,7 +2466,7 @@
     bottom: max(14px, env(safe-area-inset-bottom));
     left: 16px;
     right: 16px;
-    z-index: 100;
+    z-index: 90;
     background: rgba(28, 13, 17, 0.94);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -2472,6 +2474,19 @@
     border-radius: 999px;
     padding: 6px 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(201, 161, 91, 0.15);
+    transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s ease;
+  }
+
+  /* Automatically hide and dismiss the mobile action bar when ANY modal is open */
+  body.modal-open .mobile-sticky-actions,
+  body.modal-is-open .mobile-sticky-actions,
+  body:has(.modal-backdrop.open) .mobile-sticky-actions,
+  .modal-backdrop.open ~ .mobile-sticky-actions,
+  .mobile-sticky-actions.modal-hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(120%) scale(0.92) !important;
   }
 
   .mobile-action-pill-btn {
@@ -2832,10 +2847,10 @@
 
   /* 6. SAFE AREA PADDING FOR MODAL FOOTERS */
   .modal-footer {
-    padding: 12px 16px max(18px, env(safe-area-inset-bottom));
+    padding: 14px 16px max(24px, env(safe-area-inset-bottom)) !important;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
 
   .modal-footer button,

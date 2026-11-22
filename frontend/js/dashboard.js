@@ -609,6 +609,25 @@ async function renderUncorkHistory() {
 }
 
 // ----------------------------------------------------
+// MODAL STATE SYNCHRONIZATION
+// Keeps body classes and mobile sticky action bar in sync
+// ----------------------------------------------------
+function syncModalOpenState() {
+  const hasOpen = document.querySelectorAll('.modal-backdrop.open').length > 0;
+  document.body.classList.toggle('modal-open', hasOpen);
+  document.body.classList.toggle('modal-is-open', hasOpen);
+  const stickyBar = document.getElementById('mobileStickyActions');
+  if (stickyBar) {
+    stickyBar.classList.toggle('modal-hidden', hasOpen);
+  }
+  if (!hasOpen) {
+    document.body.style.overflow = '';
+  } else {
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// ----------------------------------------------------
 // USER PROFILE MODAL
 // ----------------------------------------------------
 function openProfileModal() {
@@ -692,14 +711,14 @@ function openProfileModal() {
 
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeProfileModal() {
   const modal = document.getElementById('profileModal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 // ----------------------------------------------------
@@ -711,7 +730,7 @@ function openUncorkJournalModal() {
   renderUncorkHistory();
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeUncorkJournalModal() {
@@ -719,7 +738,7 @@ function closeUncorkJournalModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 // ----------------------------------------------------
@@ -731,7 +750,7 @@ function openHouseholdModal() {
   renderHouseholdMembers();
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeHouseholdModal() {
@@ -739,7 +758,7 @@ function closeHouseholdModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 // ----------------------------------------------------
@@ -802,7 +821,7 @@ function openUncorkModal(wineId) {
 
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeUncorkModal() {
@@ -810,7 +829,7 @@ function closeUncorkModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 function setUncorkRating(rating) {
@@ -993,15 +1012,15 @@ function openOverview(wineId) {
   const modal = document.getElementById('overviewModal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeOverview() {
   const modal = document.getElementById('overviewModal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
   activeWineId = null;
+  syncModalOpenState();
 }
 
 // Replaces one wine in the local list with the server's updated item.
@@ -1100,7 +1119,7 @@ async function openScannerModal() {
   if (!modal) return;
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 
   const statusLabel = document.getElementById('scannerStatusLabel');
   const fallbackBox = document.getElementById('scannerFallbackBox');
@@ -1117,12 +1136,7 @@ async function closeScannerModal() {
   modal.setAttribute('aria-hidden', 'true');
 
   await stopScanner();
-
-  // Restore body scrolling only if addWineModal is also closed
-  const addModal = document.getElementById('addWineModal');
-  if (!addModal || !addModal.classList.contains('open')) {
-    document.body.style.overflow = '';
-  }
+  syncModalOpenState();
 }
 
 async function startScanner() {
@@ -1373,7 +1387,7 @@ function openAddWineModal() {
   const modal = document.getElementById('addWineModal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
   document.getElementById('inputName').focus();
 }
 
@@ -1381,7 +1395,7 @@ function closeAddWineModal() {
   const modal = document.getElementById('addWineModal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
   document.getElementById('addWineForm').reset();
   currentScannedWineId = null;
   currentScannedWineName = null;
@@ -1560,7 +1574,7 @@ function openRecommendModal() {
 
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 
   if (mealInput) setTimeout(() => mealInput.focus(), 100);
 }
@@ -1570,7 +1584,7 @@ function closeRecommendModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 function autoDetectFoodCategories(text) {
@@ -2562,7 +2576,7 @@ function openWishlistModal() {
   if (!modal) return;
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
   renderWishlist();
 }
 
@@ -2571,7 +2585,7 @@ function closeWishlistModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 async function renderWishlist() {
@@ -2705,7 +2719,7 @@ function openCsvModal() {
 
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  syncModalOpenState();
 }
 
 function closeCsvModal() {
@@ -2713,7 +2727,7 @@ function closeCsvModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  syncModalOpenState();
 }
 
 function handleCsvFileSelect(file) {
@@ -3285,4 +3299,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // MutationObserver safeguard: ensure mobile sticky actions & body scroll remain in sync
+  try {
+    const modalObserver = new MutationObserver(() => syncModalOpenState());
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+      modalObserver.observe(m, { attributes: true, attributeFilter: ['class'] });
+    });
+  } catch (_) {}
+  syncModalOpenState();
 });
